@@ -1,46 +1,20 @@
-# Tidepool Data Science Project Template
-## Creating a new repository from this template
-Manually create a new repo from this [template in github](https://github.com/tidepool-org/data-science-project-template/generate);
-github directions are [here](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+# [Explore Risk ]
 
-## New Repo Checklist & Instructions
-- [ ] Update repo settings in github (manual process)
-    * [ ] Update **Settings/Options/Repository name**
-        * Name follows the `<team (optional)> - <type(optional)> - <one-to-three-word-description> - <initials (optional)>` in `lowercase-dash-format`.
-    Examples:
-        * `icgm-sensitivity-analysis` is used by all of Tidepool so no team is needed and is considered production code so no type is needed.
-        * `data-scence-donor-data-pipeline` is only used by Data Science
-        * `data-science-template-repository` is a template (type) used by Data Science Team
-        * `data-science-explore-<short-description>` type of work is exploratory
-        * `data-science-explore-<short-description>-etn` exploratory solo work has initials at the end
-    * [ ] Update **Settings/Options/Manage access**
-        - [ ] Invite data-science-admins team and give admin access
-        - [ ] Invite Data Science team and give write access
-    * [ ] Update **Settings/Options/Manage access/Branch protection rules**
-        - [ ] Set _Branch name pattern_ to `master`
-        - [ ] Check _Require pull request reviews before merging_
-        - [ ] Set _Required approving reivews:_ to 1 for non-production code and 2 for production code
-        - [ ] Check _Dismiss stale pull request approvals when new commits are pushed_
-        - [ ] TODO: add in travis ci instructions via _Require status checks to pass before merging_
-- [ ] Fill in this readme. Everything in [  ]'s should be changed and/or filled in.
-- [ ] After completing this checklist, move the completed checklist to the bottom of the readme
-- [ ] Delete everything above the [Project Name]
-
-
-# [Project Name]
-
-#### -- Project Status: [Active, On-Hold, Completed]
-#### -- Project Disclaimer: This work is for [Exploration, Development, Production]
+#### -- Project Status: [Active]
+#### -- Project Disclaimer: This work is for [Exploration]
 
 ## Project Objective
-The purpose of this project is to [___].
+The purpose of this project is to create visualizations for the risk simulation
+analyses.
 
 ## Definition of Done
-This phase of the project will be done when [___].
+This phase of the project will be done when figures are approved and moved to a more
+permanent (non-exploratory) repository.
 
 ## Project Description
-(Add a short paragraph with some details, Why?, How?, Link to Jira and/or Confluence)
-In order to learn/do [___], we did [___].
+This project is for exploring different figures for
+https://tidepool.atlassian.net/browse/DATA-260. See Jira card for additional
+context and project steps.
 
 ### Technologies (Update this list)
 * Python (99% of the time)
@@ -116,3 +90,28 @@ NOTE: PHI data is never stored in github and the .gitignore file includes this r
 - [ ] automate the process of finding all of the the TODO: comments in the code and put link here.
 
 ## Initial Setup Checklist
+
+## New Repo Checklist & Instructions
+- [ ] Update repo settings in github (manual process)
+    * [x] Update **Settings/Options/Repository name**
+        * Name follows the `<team (optional)> - <type(optional)> - <one-to-three-word-description> - <initials (optional)>` in `lowercase-dash-format`.
+    Examples:
+        * `icgm-sensitivity-analysis` is used by all of Tidepool so no team is needed and is considered production code so no type is needed.
+        * `data-scence-donor-data-pipeline` is only used by Data Science
+        * `data-science-template-repository` is a template (type) used by Data Science Team
+        * `data-science-explore-<short-description>` type of work is exploratory
+        * `data-science-explore-<short-description>-etn` exploratory solo work has initials at the end
+    * [x] Update **Settings/Options/Manage access**
+        - [x] Invite data-science-admins team and give admin access
+        - [x] Invite Data Science team and give write access
+    * [x] Update **Settings/Options/Manage access/Branch protection rules**
+        - [x] Set _Branch name pattern_ to `master`
+        - [x] Check _Require pull request reviews before merging_
+        - [x] Set _Required approving reivews:_ to 1 for non-production code and 2 for production code
+        - [x] Check _Dismiss stale pull request approvals when new commits are pushed_
+        - [ ] TODO: add in travis ci instructions via _Require status checks to pass before merging_
+- [x] Fill in this readme. Everything in [  ]'s should be changed and/or filled in.
+- [x] After completing this checklist, move the completed checklist to the bottom of the readme
+- [x] Delete everything above the [Project Name]
+
+
