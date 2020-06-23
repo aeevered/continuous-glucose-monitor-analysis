@@ -11,6 +11,7 @@ import plotly.express as px
 from plotly.offline import plot
 import plotly.io as pio
 import datetime as dt
+import itertools
 
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 # TODO: automatically grab the code version to add to the figures generated
