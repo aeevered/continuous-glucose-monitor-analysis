@@ -427,6 +427,202 @@ make_table(
     save_fig=True,
 )
 
+# %% Visualization Functions
+def make_boxplot(
+    table_df,
+    image_type="png",
+    figure_name="<number-or-name>-boxplot",
+    analysis_name="analysis-<name>",
+    metric="LBGI",
+    level_of_analysis= "analysis_type",
+    notched_boxplot=True,
+    y_scale_type="linear",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    """
+    Create a boxplot figure.
+
+    :param table_df: Table name of data to visualize.
+    :param image_type: Image type for saving image (eg. png, jpeg).
+    :param figure_name: Name of figure (for name of file for saving figure).
+    :param analysis_name: Name of analysis (for name of file for saving figure).
+    :param metric: Metric from table_df to visualize on the y-axis.
+    :param level_of_analysis: Level of analysis breakdown ("all", "bg_test_condition", etc.) for x-axis.
+    :param notched_boxplot: True if want the boxplot to be notched boxplot style.
+    :param y_scale_type: Log or linear for y axis scale.
+    :param view_fig: True if want to view figure.
+    :param save_fig: True if want to save figure.
+    :param save_fig_path: File path for where to save figure.
+    :return:
+    """
+
+    #If level_of_analysis is to show all analyses (no breakdown), show as single box.
+    if level_of_analysis == "all":
+        fig = px.box(table_df,
+                     x=None,
+                     y=metric,
+                     color_discrete_sequence=px.colors.qualitative.T10,
+                     notched = notched_boxplot)
+
+    #Otherwise show separate boxplot for each breakdown category.
+    else:
+        fig = px.box(table_df,
+                     x=level_of_analysis,
+                     y=metric,
+                     color= level_of_analysis,
+                     color_discrete_sequence=px.colors.qualitative.T10,
+                        #can also explicitly define the sequence: ["red", "green", "blue"],
+                     notched = notched_boxplot)
+
+    #Update figure layout based on scale type
+    fig.update_layout(yaxis_type=y_scale_type)
+
+    save_view_fig(fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path)
+
+    return
+
+
+def make_bubble_plot(
+    table_df,
+    image_type="png",
+    figure_name="<number-or-name>-bubbleplot",
+    analysis_name="analysis-<name>",
+    metric="LBGI",
+    level_of_analysis= "analysis_type",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    if level_of_analysis == "all":
+
+        df = table_df[[metric]]
+        grouped_df = df.groupby([metric]).size().reset_index(name="count")
+
+        fig = px.scatter(
+            x=None,
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df["count"],
+            size_max=40)
+
+    else:
+
+        df = table_df[[level_of_analysis, metric]]
+        grouped_df = df.groupby([level_of_analysis, metric]).size().reset_index(name="count")
+
+        fig = px.scatter(
+            x=grouped_df[level_of_analysis],
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df["count"],
+            size_max=40)
+
+
+    save_view_fig(fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path)
+
+    return
+
+def make_bubble_plot(
+    table_df,
+    image_type="png",
+    figure_name="<number-or-name>-bubbleplot",
+    analysis_name="analysis-<name>",
+    metric="LBGI",
+    level_of_analysis= "analysis_type",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    if level_of_analysis == "all":
+
+        df = table_df[[metric]]
+        grouped_df = df.groupby([metric]).size().reset_index(name="count")
+
+        fig = px.scatter(
+            x=None,
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df["count"],
+            size_max=40)
+
+    else:
+
+        df = table_df[[level_of_analysis, metric]]
+        grouped_df = df.groupby([level_of_analysis, metric]).size().reset_index(name="count")
+
+        fig = px.scatter(
+            x=grouped_df[level_of_analysis],
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df["count"],
+            size_max=40)
+
+
+    save_view_fig(fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path)
+
+    return
+
+def save_view_fig(
+        fig,
+        image_type="png",
+        figure_name="<number-or-name>",
+        analysis_name="analysis-<name>",
+        view_fig=True,
+        save_fig=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    if view_fig:
+        fig.show()
+
+    file_name = "{}-{}_{}_{}".format(analysis_name, figure_name, utc_string, code_version)
+
+    if save_fig:
+        pio.write_image(
+            fig=fig, file=os.path.join(save_fig_path, file_name + ".{}".format(image_type)), format=image_type
+        )
+
+    return
+
+#Iterate through each metric and analysis_level category shown below and create boxplot
+#figure with both log scale and linear scale.
+metrics = ["LBGI"]
+analysis_levels = ["bg_test_condition", "analysis_type", "all"]
+y_axis_scales = ["log", "linear"]
+
+for analysis_level, metric, axis_scale in itertools.product(analysis_levels, metrics, y_axis_scales):
+    make_boxplot(
+        summary_df_reduced,
+        figure_name= "boxplot-" + analysis_level + "-" + metric,
+        analysis_name="icgm-sensitivity-analysis",
+        metric=metric,
+        level_of_analysis=analysis_level,
+        notched_boxplot = False,
+        y_scale_type = axis_scale,
+        image_type="png",
+        view_fig=False,
+        save_fig=True  # This is not working, need to figure out why
+    )
+
+
+metrics = ["LBGI Risk Score", "DKAI Risk Score"]
+analysis_levels = ["bg_test_condition", "analysis_type", "all"]
+
+for analysis_level, metric in itertools.product(analysis_levels, metrics):
+    make_bubble_plot(
+        summary_df_reduced,
+        image_type="png",
+        figure_name="bubbleplot-" + analysis_level + "-" + metric,
+        analysis_name="icgm-sensitivity-analysis",
+        metric=metric,
+        level_of_analysis=analysis_level,
+        view_fig=True,
+        save_fig=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures")
+    )
+
+
 
 # %% Distribution of Batch Sensor Characteristics
 # # filter data by virtual_patient and bg_test_condtion
