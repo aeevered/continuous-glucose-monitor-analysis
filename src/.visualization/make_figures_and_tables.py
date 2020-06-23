@@ -87,9 +87,9 @@ def bin_data(bin_breakpoints):
 sim_results_location = os.path.join("..", "..", "data", "processed")
 simulation_file = "risk-sim-results-2020-04-13"
 file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
-demographic_datapath = os.path.join(file_import_path + "-just-demographics.csv")
-sensor_datapath = os.path.join(file_import_path + "-sensor-metrics.csv")
-summary_datapath = os.path.join(file_import_path + "-summary-metrics.csv")
+demographic_datapath = os.path.join(file_import_path + "-just-demographics-nogit.csv")
+sensor_datapath = os.path.join(file_import_path + "-sensor-metrics-nogit.csv")
+summary_datapath = os.path.join(file_import_path + "-summary-metrics-nogit.csv")
 
 # reduced_data_path_and_file_name = os.path.join(file_import_path + "-reduced.csv")
 if os.path.exists(demographic_datapath):
