@@ -602,7 +602,7 @@ for analysis_level, metric, axis_scale in itertools.product(analysis_levels, met
         notched_boxplot = False,
         y_scale_type = axis_scale,
         image_type="png",
-        view_fig=False,
+        view_fig=True,
         save_fig=True  # This is not working, need to figure out why
     )
 
