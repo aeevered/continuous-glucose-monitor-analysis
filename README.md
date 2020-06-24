@@ -16,6 +16,7 @@ This project is for exploring different figures for
 https://tidepool.atlassian.net/browse/DATA-260. See Jira card for additional
 context and project steps.
 
+
 ### Technologies (Update this list)
 * Python (99% of the time)
 * [Anaconda](https://www.anaconda.com/) for our virtual environments
@@ -58,10 +59,7 @@ This may also make it easier to convert existing packages into pypi packages. We
 in conda using the conda-environment.yml file when packages are not available via pip (e.g., R and plotly-orca).
 
 ## Getting Started with this project
-1. Raw Data is being kept [here](Repo folder containing raw data) within this repo.
-(If using offline data mention that and how they may obtain the data from the froup)
-2. Data processing/transformation scripts are being kept [here](Repo folder containing data processing scripts/notebooks)
-3. (Finishing filling out this list)
+1. Raw Data is being kept [here](https://drive.google.com/file/d/1N38IkCwox8SRm2dmI35lr72gbmrQztVp/view?usp=sharing).
 
 ## Contributing Guide
 1. All are welcome to contribute to this project.
