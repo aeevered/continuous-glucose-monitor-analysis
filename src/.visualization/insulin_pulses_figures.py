@@ -12,8 +12,8 @@ utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 code_version = "v0-1-0"
 
 insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "insulin-pulses-risk-assessment")
-summary_metrics_file = "2020-06-24-insulin-pulse-summary-stats-nogit.csv"
-simulation_example_file = "SBR 0.05 VPBR 0.05 MBR 0.1-nogit.csv"
+summary_metrics_file = "summary.csv"
+simulation_example_file = "SBR 0.65 VPBR 0.65 MBR 6.5.csv"
 
 summary_metrics_path = os.path.abspath(os.path.join(insulin_pulse_file_location, summary_metrics_file))
 simulation_example_path = os.path.abspath(os.path.join(insulin_pulse_file_location, simulation_example_file))
@@ -28,6 +28,21 @@ simulation_example_df = pd.read_csv(simulation_example_path)
 # https://docs.google.com/document/d/1XBUKXTzhWR49ZS63mDXlkTePFK1KDmpRZsPtz3_J06E/edit?ts=5ef2527a#
 # Cameron did a heatmap, but I think we can do a plotly scattergl plot.
 # BONUS: add the DKA index value to the hover state
+
+
+summary_metrics_df.sort_values("dka_risk_score", inplace=True)  # sort so that legend is in the right order
+summary_metrics_df["dka_index_circle_size"] = summary_metrics_df["dka_index"] + 1.0
+
+# Define color dictionary
+score_dict = {0: "0 - None", 1: "1 - Negligible", 2: "2 - Minor", 3: "3 - Serious", 4: "4 - Critical"}
+color_dict = {
+   "0 - None": "#0F73C6",
+   "1 - Negligible": "#06B406",
+   "2 - Minor": "#D0C07F",
+   "3 - Serious": "#E18325",
+   "4 - Critical": "#9A3A39",
+}
+summary_metrics_df["dka_risk_score_str"] = summary_metrics_df["dka_risk_score"].replace(score_dict)
 
 
 # from make_figures_and_tables import save_view_fig
@@ -58,7 +73,7 @@ def save_view_fig(
     return
 
 
-def create_scatterplot(
+def create_scatterplot_v1(
         table_df,
         x_value,
         y_value,
@@ -89,10 +104,10 @@ def create_scatterplot(
             y=df[y_value],
             mode='markers',
             hovertext=table_df[hover_value],
-            name=str(value) + " - " + score_dict[value],
+            name=score_dict[value],
             showlegend=True,
             marker=dict(
-                color=[color_dict[value]] * len(df.index),
+                color=[color_dict[score_dict[value]]] * len(df.index),
                 size=8,
                 line_width=1,
                 opacity=0.7
@@ -136,22 +151,54 @@ def create_scatterplot(
     return
 
 
+def create_scatterplot_v2(
+        summary_metrics_df=summary_metrics_df,
+        color_dict=color_dict,
+        image_type = "png",
+        figure_name = "<number-or-name>",
+        analysis_name = "<analysis-name>",
+        view_fig = True,
+        save_fig = True,
+        save_fig_path = os.path.join("..", "..", "reports", "figures"),
+        width=600,
+        height=700
+):
+    summary_fig = px.scatter(
+       data_frame=summary_metrics_df,
+       x="sbr",
+       y="loop_max_basal_rate",
+       log_y=True,
+       color="dka_risk_score_str",
+       size="dka_index_circle_size",
+       color_discrete_map=color_dict,
+       range_y=[0.05, 7.5],
+    )
+
+    layout = go.Layout(
+       title="Risk of DKA Associated with Missing Insulin Pulses",
+       showlegend=True,
+       yaxis=dict(title="Maximum Allowable Basal Rate (Loop Setting)", tickvals=[0.05, 0.1, 0.2, 0.5, 1, 2, 5, 7]),
+       xaxis=dict(title="Scheduled Basal Rate (U/hr)", tickvals=np.arange(0.05, 0.75, 0.05)),
+       plot_bgcolor="#D3D3D3",
+       legend_title="Tidepool DKAI Risk Score",
+    )
+
+    summary_fig.update_layout(layout)
+
+    save_view_fig(fig=summary_fig
+                  , image_type=image_type
+                  , figure_name=figure_name
+                  , analysis_name=analysis_name
+                  , view_fig=view_fig
+                  , save_fig=save_fig
+                  , save_fig_path=save_fig_path
+                  , width=width
+                  , height=height)
+
+    return
+
 # Create Scatterplot Figure
-
-# Define color dictionary
-color_dict = {0: "#0F73C6",
-              1: "#06B406",
-              2: "#D0C07F",
-              3: "#E18325",
-              4: "#9A3A39"}
-
-score_dict = {0: "None",
-              1: "Negligible",
-              2: "Minor",
-              3: "Serious",
-              4: "Critical"}
-
-create_scatterplot(
+create_scatterplot_v1(
     table_df=summary_metrics_df,
     x_value="sbr",
     y_value="loop_max_basal_rate",
@@ -164,7 +211,7 @@ create_scatterplot(
     x_title="Scheduled Basal Rate",
     y_title="Loop Max Allowable Basal Rate",
     image_type="png",
-    figure_name="summary-metrics-dkai-riskscore-scatterplot",
+    figure_name="summary-metrics-dkai-riskscore-scatterplot-v1",
     analysis_name="insulin-pulses",
     view_fig=True,
     save_fig=True,
@@ -172,6 +219,20 @@ create_scatterplot(
     width=600,
     height=700
 
+)
+
+
+create_scatterplot_v2(
+    summary_metrics_df=summary_metrics_df,
+    color_dict=color_dict,
+    image_type="png",
+    figure_name="summary-metrics-dkai-riskscore-scatterplot-v2",
+    analysis_name="insulin-pulses",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures", "insulin-pulses-risk-assessment"),
+    width=600,
+    height=500
 )
 
 # Simulation Example Plot
@@ -243,18 +304,18 @@ def make_bar_trace(
 
 def x_axis_properties(sim_df, show_title_axis_marks):
     if show_title_axis_marks:
-        title_text = "Minutes Post Simulation"
+        title_text = "Hours Post Simulation"
     else:
         title_text = ""
 
     x_axis_properties = dict(
-        range=(0, max(sim_df["minutes_post_simulation"])),
+        range=(0, max(sim_df["hours_post_simulation"])),
         showgrid=True,
         gridcolor="rgb(255, 255, 255)",
         hoverformat="%H:%M",
         showticklabels=show_title_axis_marks,
         tickmode='linear',
-        dtick=60,
+        dtick=1,
         tickfont=dict(
             size=10
         ),
@@ -301,41 +362,62 @@ def create_simulation_figure(sim_df,
 
     sim_df['five_minute_marks'] = sim_df.index
     sim_df['minutes_post_simulation'] = sim_df['five_minute_marks'].apply(lambda x: x * 5)
+    sim_df['hours_post_simulation'] = sim_df['minutes_post_simulation'] / 60
+
 
     #Make Subplots
-    fig = make_subplots(rows=4
+    fig = make_subplots(rows=3
                         , cols=1
-                        , subplot_titles=("BG Over Time", "Insulin Delivery", "Delivered Basal Insulin", "Undelivered Basal Insulin")
+                        , subplot_titles=("BG Over Time", "Delivered Basal Insulin", "Undelivered Basal Insulin Pulses")
                         , vertical_spacing=0.15)
 
     #Define all fields using and style elements
-    y_fields = ["bg", "bg_sensor", "sbr", 'temp_basal', 'bolus', 'delivered_basal_insulin', 'undelivered_basal_insulin']
-    colors = ["#472A87", "#D9CEED", "#008ECC", "#008ECC", "#6AA84F", "#f95f3b", "#f95f3b"] # "#008ECC", "#f1c232"]
-    names = ["true_bg", "sensor_bg",  "sbr", 'temp_basal', 'bolus', 'delivered_basal_insulin', 'undelivered_basal_insulin']
-    symbols = ['circle', "circle",'circle', 'circle', 'triangle-down', 'circle', 'circle']
+    y_fields = ["bg", "bg_sensor", "sbr", 'delivered_basal_insulin', 'undelivered_basal_insulin']
+    colors = ["#472A87", "#D9CEED", "#f95f3b", "#008ECC", "#9A3A39"] # "#008ECC", "#f1c232"]
+    names = ["true_bg", "sensor_bg",  "sbr", 'delivered_basal_insulin', 'undelivered_basal_insulin']
+    symbols = ['circle', "circle",'circle', 'circle', 'circle']
 
     #For stem plots
-    styles = ['markers', "markers",'lines', 'lines', 'markers', 'markers', 'markers']
-    sizes = [4, 4, 4, 4, 4, 3, 3]
-
-    #To make not stem plots, uncomment following line
-    #styles = ['markers', "markers", 'lines', 'lines', 'markers', 'lines', 'lines']
-    #sizes = [4, 4, 4, 4, 4, 4, 4]
-
-    dashes = ["solid", 'solid', "dot", "solid", "solid", 'solid', 'solid']
-    line_shapes = ['hv', 'hv', 'hv', 'hv', 'hv', 'hv', 'hv']
-    rows = [1, 1, 2, 2, 2, 3, 4]
-    fills = [None, None, None, None, 'tozeroy', None, None]
-    opacities = [.9, .75, 1, 1, 0.25, 1, 1]
+    styles = ['markers', "markers",'lines', 'lines','markers']
+    sizes = [4, 4, 4, 3, 6]
+    dashes = ["solid", 'solid', "dot", 'solid', 'solid']
+    line_shapes = ['hv', 'hv', 'hv', 'hv', 'hv']
+    rows = [1, 1, 2, 2, 3]
+    fills = [None, None, None, None, None]
+    opacities = [.9, .75, 1, 1, 1]
 
     y_axis_labels = ["BG (mg/dL)", "Insulin (U or U/hr)", "Insulin (U)", "Insulin(U)"]
+
+    #For stem plot
+    #Possibly change this to px.scatter
+
+    '''
+    fig.append_trace(px.scatter(
+        data_frame=sim_df,
+        x="hours_post_simulation",
+        y="undelivered_basal_insulin",
+        error_y=np.zeros(len(sim_df)),
+        error_y_minus="undelivered_basal_insulin",
+        size=np.ones(len(simulation_example_df)),
+        size_max=7.5,
+        color_discrete_sequence=["#9A3A39"],
+    ), row=3, col=1)
+    '''
+
+    fig.append_trace(make_bar_trace(
+        sim_df=sim_df,
+        x_value="hours_post_simulation",
+        y_value="undelivered_basal_insulin",
+        marker_color= "#9A3A39",
+        name="Undelivered Basal Insulin",
+    ), row=3, col=1)
 
     # Make and add all the traces
     for y_field, color, name, symbol, row, style, dash, line_shape, fill, opacity, size in zip(y_fields, colors, names,
                                                                                          symbols, rows, styles, dashes,
                                                                                          line_shapes, fills, opacities, sizes):
         trace = make_scatter_trace(
-            x_value=sim_df["minutes_post_simulation"],
+            x_value=sim_df["hours_post_simulation"],
             y_value=sim_df[y_field],
             color=color,
             symbol=symbol,
@@ -352,28 +434,10 @@ def create_simulation_figure(sim_df,
 
 
 
-    #Add in the barplot traces to make these stem plots (REMOVE FOR NO STEM PLOT)
-    fig.append_trace(make_bar_trace(
-        sim_df=sim_df,
-        x_value="minutes_post_simulation",
-        y_value="delivered_basal_insulin",
-        marker_color= "#008ECC",
-        name="Delivered Basal Insulin",
-    ), row=3, col=1)
-
-    fig.append_trace(make_bar_trace(
-        sim_df=sim_df,
-        x_value="minutes_post_simulation",
-        y_value="undelivered_basal_insulin",
-        marker_color= "#f1c232",
-        name="Undelivered Basal Insulin",
-    ), row=4, col=1)
-
-
     # This is only updating for one of the traces
     fig.update_layout(showlegend=True,
-                      paper_bgcolor='rgb(243, 243, 243)',
-                      plot_bgcolor='rgb(243, 243, 243)'
+                      paper_bgcolor="white",
+                      plot_bgcolor="#D3D3D3"
                       )
 
     # Update xaxis properties
@@ -404,5 +468,5 @@ create_simulation_figure(sim_df=simulation_example_df,
                          view_fig=True,
                          save_fig=True,
                          save_fig_path=os.path.join("..", "..", "reports", "figures", "insulin-pulses-risk-assessment"),
-                         width=600,
-                         height=900)
+                         width=800,
+                         height=1000)
