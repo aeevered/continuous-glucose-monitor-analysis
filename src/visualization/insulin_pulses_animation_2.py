@@ -4,6 +4,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from celluloid import Camera
 from matplotlib.lines import Line2D
+import re
 
 # This script depends on imagemagick (for saving image). You can download imagemagick here:
 # http://www.imagemagick.org/script/download.php
@@ -27,46 +28,75 @@ sim_df["minutes_post_simulation"] = sim_df["five_minute_marks"].apply(
 )
 sim_df["hours_post_simulation"] = sim_df["minutes_post_simulation"] / 60
 
-#Create figure
 
+#Parse out MBR from filename
+start = 'MBR '
+end = '.csv'
+mbr_string = (filename.split(start))[1].split(end)[0]
+
+#Set fonts
+font = {'size': 8}
+plt.rc('font', **font)
+
+#Create figure
 fig, axes = plt.subplots(2)
 camera = Camera(fig)
-t = np.linspace(0, 2 * np.pi, 128, endpoint=False)
 
-axes[0].set_ylabel('BG (mg/dL')
-axes[0].set_xlabel('Hours Post Simulation')
+
+axes[0].set_ylabel('Glucose (mg/dL)')
+axes[0].set_xlabel('Hours')
 axes[0].set_xlim(0, 24)
-axes[0].set_ylim(min(sim_df["bg"]-20), max(sim_df["bg"]+20))
+axes[0].set_ylim(min(sim_df["bg"]-20), max(sim_df["bg"]+40))
 axes[0].set_xticks(np.arange(min(sim_df["hours_post_simulation"]), max(sim_df["hours_post_simulation"])+1, 2.0))
 axes[0].grid(True)
+axes[0].set_title("Simulation where scheduled basal rate is " + str(max(sim_df["sbr"])) +" and maximum allowable temp basal is " + mbr_string, fontsize=8)
+
 
 axes[1].set_ylabel('Insulin (U or U/hr)')
-axes[1].set_xlabel('Hours Post Simulation')
+axes[1].set_xlabel('Hours')
 axes[1].set_xlim(0, 24)
-axes[1].set_ylim(0, 1)
+axes[1].set_ylim(0, max(sim_df["iob"])+.2)
 axes[1].set_xticks(np.arange(min(sim_df["hours_post_simulation"]), max(sim_df["hours_post_simulation"])+1, 2.0))
 axes[1].grid(True)
 
+
 for t in sim_df["hours_post_simulation"]:
     sim_df_subset = sim_df[sim_df["hours_post_simulation"]<t] #create subset of the data
-    axes[0].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["bg"], color="#D9CEED", linestyle="None", label="True BG", marker='o', markersize=2)
-    axes[0].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["bg_sensor"], color="#6AA84F", linestyle='None', label="Sensor BG", marker='o',markersize=2)
-    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["sbr"], color="#008ECC", linestyle="dotted", label="Scheduled Basal Rate")
-    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["iob"], color="#271B46", linestyle="solid", label="Insulin on Board")
-    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["delivered_basal_insulin"], color="#f9706b",linestyle="solid", label="Delivered Basal Insulin")
+    axes[0].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["bg"], color="#B1BEFF", linestyle="None", marker='o', markersize=2)
+    axes[0].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["bg_sensor"], color="#6AA84F", alpha=0.8, linestyle='None', marker='o', markersize=2)
+    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["sbr"], color="#008ECC", linewidth=2, linestyle="--")
+    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["iob"], color="#744AC2", linestyle="solid")
+    (markerLines, stemLines, baseLines) = axes[1].stem(sim_df_subset["hours_post_simulation"], sim_df_subset["delivered_basal_insulin"], linefmt="#f9706b")
+    plt.setp(markerLines, color="#f9706b", markersize=2)
+    plt.setp(stemLines, color="#f9706b", linewidth=1)
+    plt.setp(baseLines, color="#f9706b", linewidth=1)
+
+    axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["temp_basal"], color="#008ECC", drawstyle="steps-pre")
+
     camera.snap()
 
 #Create custom legend
-labels = ['True BG', 'Sensor BG', 'Scheduled Basal Rate',
-          'Insulin on Board','Delivered Basal Insulin']
-colors = ["#D9CEED", "#6AA84F", "#008ECC", "#271B46", "#f9706b"]
-handles = []
-for c, l in zip(colors, labels):
-    handles.append(Line2D([0], [0], color = c, label = l))
+bg_labels = ['True BG', 'Sensor Glucose']
+bg_colors = ["#B1BEFF", "#6AA84F"]
 
-axes[0].legend(handles = handles, loc = 'upper right')
+insulin_labels = ['Scheduled Basal Rate','Insulin on Board','Delivered Basal Insulin', 'Temp Basal']
+insulin_colors = ["#008ECC","#744AC2", "#F9706B", "#008ECC"]
+insulin_line_styles = ['--','-','-','-']
+
+bg_handles = []
+insulin_handles = []
+
+for c, l in zip(bg_colors, bg_labels):
+    bg_handles.append(Line2D([0], [0], color=c, label=l, marker='o', markersize=3, linestyle="None"))
+
+for c, l, s in zip(insulin_colors, insulin_labels, insulin_line_styles):
+    insulin_handles.append(Line2D([0], [0], color=c, label=l, linestyle=s, linewidth=1.5))
+
+axes[0].legend(handles=bg_handles, loc='upper right')
+axes[1].legend(handles=insulin_handles, loc='upper right')
 
 
+#Plot figure and add animation
 fig.tight_layout()
 
 animation = camera.animate()
@@ -74,7 +104,5 @@ animation = camera.animate()
 animation.save('animation.gif', writer='imagemagick', fps=30)
 
 plt.show()
-
-
 
 #animation.save('celluloid_subplots.gif') #, writer='imagemagick')
