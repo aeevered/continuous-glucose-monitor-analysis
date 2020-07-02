@@ -37,6 +37,8 @@ def create_insulin_pulse_animation(file_location, filename):
     fig, axes = plt.subplots(3)
     camera = Camera(fig)
 
+    fig.set_size_inches(10, 6)
+
     # Parse out MBR from filename
     start = 'MBR '
     end = '.csv'
@@ -115,21 +117,22 @@ def create_insulin_pulse_animation(file_location, filename):
     animation = camera.animate()
 
     #Save and plot figure
+    plt.show()
+
     utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
     code_version = "v0-1-0"
 
-    #TODO: get to correct filepath location
-    animation_file_name = "{}-{}_{}_{}_{}".format(
-        "insulin-pulses-analysis", "animation", filename, utc_string, code_version
-    )
 
+    # TODO: get to correct filepath location
     #filepath = os.path.join(
     #"..", "..", "reports", "figures", "2020-06-30_wPyloopkit_Update"
     #)
 
-    animation.save(animation_file_name+'.gif', writer='imagemagick', fps=20)
+    animation_file_name = "{}-{}_{}_{}_{}".format(
+        "insulin-pulses-analysis", "animation", filename, utc_string, code_version
+    )
 
-    plt.show()
+    animation.save(animation_file_name+'.gif', writer='imagemagick', fps=20, dpi=100)
 
 #TODO: split above into additional functions
 #TODO: add in parameters for saving and viewing fig
