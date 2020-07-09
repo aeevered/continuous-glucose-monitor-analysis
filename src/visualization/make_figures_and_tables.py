@@ -466,6 +466,37 @@ for bg_test_condition in summary_df_reduced["bg_test_condition"].unique():
     )
     all_analyses_summary_df = pd.concat([all_analyses_summary_df, temp_summary])
 
+
+#############################
+# Define color dictionary
+score_dict = {
+    0: "0 - None",
+    1: "1 - Negligible",
+    2: "2 - Minor",
+    3: "3 - Serious",
+    4: "4 - Critical",
+}
+color_dict = {
+    "0 - None": "#0F73C6",
+    "1 - Negligible": "#06B406",
+    "2 - Minor": "#D0C07F",
+    "3 - Serious": "#E18325",
+    "4 - Critical": "#9A3A39",
+}
+summary_df_reduced["DKAI Risk Score String"] = summary_df_reduced["DKAI Risk Score"].replace(score_dict)
+summary_df_reduced["LBGI Risk Score String"] = summary_df_reduced["LBGI Risk Score"].replace(score_dict)
+
+#############################
+level_of_analysis_dict = {
+    "all":'All Analyses',
+    "analysis_type": "Analysis Type",
+    "bg_test_condition": "BG Test Condition"
+}
+
+
+#############################
+
+
 # make table
 make_table(
     all_analyses_summary_df.reset_index(),
@@ -514,31 +545,49 @@ def make_boxplot(
 
     # If level_of_analysis is to show all analyses (no breakdown), show as single box.
     if level_of_analysis == "all":
-        fig = px.box(
+        summary_fig = px.box(
             table_df,
             x=None,
             y=metric,
+            #points="all",
             color_discrete_sequence=px.colors.qualitative.T10,
             notched=notched_boxplot,
+            log_y=True
         )
 
     # Otherwise show separate boxplot for each breakdown category.
     else:
-        fig = px.box(
+        summary_fig = px.box(
             table_df,
-            x=level_of_analysis,
             y=metric,
+            #points = "all",
             color=level_of_analysis,
             color_discrete_sequence=px.colors.qualitative.T10,
             # can also explicitly define the sequence: ["red", "green", "blue"],
             notched=notched_boxplot,
+            facet_col=level_of_analysis,
+            boxmode="overlay",
+            log_y=True
         )
 
-    # Update figure layout based on scale type
-    fig.update_layout(yaxis_type=y_scale_type)
+
+    layout = go.Layout(
+        title= "Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
+        showlegend=True,
+        yaxis=dict(
+            title=metric #, type=y_scale_type
+        ),
+        xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
+        plot_bgcolor="#D3D3D3",
+        legend_title=level_of_analysis_dict[level_of_analysis]
+    )
+
+    summary_fig.update_layout(layout)
+
+    summary_fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", "")))
 
     save_view_fig(
-        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
     )
 
     return
@@ -557,15 +606,104 @@ def make_bubble_plot(
 ):
     if level_of_analysis == "all":
 
+        df = table_df[[metric, metric+ " String"]]
+        grouped_df = df.groupby([metric, metric+ " String"]).size().reset_index(name="count")
+
+        summary_fig = px.scatter(
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df[metric + " String"],
+            color_discrete_map=color_dict,
+            size_max=25,
+        )
+
+        layout = go.Layout(
+            showlegend=True,
+            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
+            yaxis=dict(
+                title=metric, tickvals=[0, 1, 2, 3, 4]
+            ),
+            xaxis=dict(type='category', showticklabels=False),
+            plot_bgcolor="#D3D3D3",
+            legend_title="Tidepool " + metric,
+        )
+
+    else:
+
+        df = table_df[[level_of_analysis, metric, metric+ " String"]]
+        grouped_df = (
+            df.groupby([level_of_analysis, metric, metric+ " String"]).size().reset_index(name="count")
+        )
+
+
+        summary_fig = px.scatter(
+            x=grouped_df[level_of_analysis],
+            y=grouped_df[metric],
+            size=grouped_df["count"],
+            color=grouped_df[metric+ " String"],
+            color_discrete_map=color_dict,
+            #color=grouped_df["count"],
+            #colorscale="RdYlGn",
+            size_max=25,
+        )
+
+        if level_of_analysis=="analysis_type":
+            tickangle=45
+        else:
+            tickangle=0
+
+        layout = go.Layout(
+            showlegend=True,
+            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
+            yaxis=dict(
+                title=metric, tickvals=[0, 1, 2, 3, 4]
+            ),
+            xaxis=dict(title=level_of_analysis_dict[level_of_analysis], type='category', tickangle=tickangle),
+            plot_bgcolor="#D3D3D3",
+            legend_title="Tidepool " + metric,
+        )
+
+    summary_fig.update_layout(layout)
+
+
+
+    save_view_fig(
+        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+    )
+
+    return
+
+def make_histogram(
+    table_df,
+    image_type="png",
+    figure_name="<number-or-name>-histogram",
+    analysis_name="analysis-<name>",
+    metric="LBGI",
+    level_of_analysis="analysis_type",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    if level_of_analysis == "all":
+
         df = table_df[[metric]]
         grouped_df = df.groupby([metric]).size().reset_index(name="count")
 
-        fig = px.scatter(
-            x=None,
-            y=grouped_df[metric],
-            size=grouped_df["count"],
-            color=grouped_df["count"],
-            size_max=40,
+        summary_fig = px.histogram(
+            x=grouped_df[metric],
+            nbins=500,
+            #log_x=True,
+            color_discrete_sequence=px.colors.qualitative.T10
+        )
+
+        layout = go.Layout(
+            showlegend=True,
+            title="Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
+            plot_bgcolor="#D3D3D3",
+            xaxis=dict(
+                title=metric
+            ),
+            legend_title=level_of_analysis_dict[level_of_analysis]
         )
 
     else:
@@ -575,25 +713,95 @@ def make_bubble_plot(
             df.groupby([level_of_analysis, metric]).size().reset_index(name="count")
         )
 
-        fig = px.scatter(
-            x=grouped_df[level_of_analysis],
-            y=grouped_df[metric],
-            size=grouped_df["count"],
-            color=grouped_df["count"],
-            size_max=40,
+        if level_of_analysis == "analysis_type":
+            summary_fig = px.histogram(
+                x=grouped_df[metric],
+                #log_x=True,
+                facet_row=grouped_df[level_of_analysis],
+                nbins=500,
+                color_discrete_sequence=px.colors.qualitative.T10,
+                color=grouped_df[level_of_analysis]
+            )
+        else:
+            summary_fig = px.histogram(
+                x=grouped_df[metric],
+                #log_x=True,
+                facet_col=grouped_df[level_of_analysis],
+                facet_col_wrap=3,
+                nbins=500,
+                color_discrete_sequence=px.colors.qualitative.T10,
+                color=grouped_df[level_of_analysis]
+            )
+
+        layout = go.Layout(
+            showlegend=True,
+            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
+            plot_bgcolor="#D3D3D3",
+            #xaxis=dict(title=metric),
+            legend_title=level_of_analysis_dict[level_of_analysis],
         )
 
+    summary_fig.update_layout(layout)
+
+    summary_fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", "")))
+
     save_view_fig(
-        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
     )
 
     return
 
+
+def make_distribution_table(
+        table_df,
+        image_type="png",
+        table_name="<number-or-name>-table",
+        analysis_name="analysis-<name>",
+        metric="LBGI",
+        level_of_analysis="analysis_type",
+        view_fig=True,
+        save_fig=True,
+        save_csv=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures")
+):
+
+    header = [metric]+[""]*8
+
+
+    if level_of_analysis == "all":
+        df = table_df[[metric]]
+        distribution_df = df[metric].describe().to_frame().transpose()
+        print(distribution_df)
+        header = [metric] + [""] * 7
+    else:
+        df = table_df[[level_of_analysis, metric]]
+        distribution_df = df.groupby(level_of_analysis)[[metric]].describe().reset_index()
+        header = [metric] + [""] * 8
+
+    distribution_df = distribution_df.round(2)
+
+    #distribution_df.iloc[-1] = header
+
+    make_table(
+        distribution_df,
+        image_type=image_type,
+        table_name=table_name,
+        analysis_name=analysis_name,
+        cell_height=[30],
+        cell_width=[150],
+        cell_header_height=[30],
+        view_fig=view_fig,
+        save_fig=save_fig,
+        save_csv=save_csv,
+        save_fig_path=save_fig_path,
+    )
+    return
+
 # Iterate through each metric and analysis_level category shown below and create boxplot
 # figure with both log scale and linear scale.
-metrics = ["LBGI"]
+metrics = ["LBGI", "DKAI"]
 analysis_levels = ["bg_test_condition", "analysis_type", "all"]
-y_axis_scales = ["log", "linear"]
+y_axis_scales = ["log"] #, "linear"]
 
 for analysis_level, metric, axis_scale in itertools.product(
     analysis_levels, metrics, y_axis_scales
@@ -604,11 +812,36 @@ for analysis_level, metric, axis_scale in itertools.product(
         analysis_name="icgm-sensitivity-analysis",
         metric=metric,
         level_of_analysis=analysis_level,
-        notched_boxplot=False,
+        notched_boxplot=True,
         y_scale_type=axis_scale,
         image_type="png",
-        view_fig=True,
-        save_fig=True,  # This is not working, need to figure out why
+        view_fig=False,
+        save_fig=True  # This is not working, need to figure out why
+    )
+
+
+    make_histogram(
+        summary_df_reduced,
+        figure_name="histogram-" + analysis_level + "-" + metric,
+        analysis_name="icgm-sensitivity-analysis",
+        metric=metric,
+        level_of_analysis=analysis_level,
+        image_type="png",
+        view_fig=False,
+        save_fig=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures")
+    )
+
+    make_distribution_table(
+        summary_df_reduced,
+        table_name="distribution-table-" + analysis_level + "-" + metric,
+        analysis_name="icgm-sensitivity-analysis",
+        metric=metric,
+        level_of_analysis=analysis_level,
+        image_type="png",
+        view_fig=False,
+        save_fig=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures")
     )
 
 
@@ -623,7 +856,7 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         analysis_name="icgm-sensitivity-analysis",
         metric=metric,
         level_of_analysis=analysis_level,
-        view_fig=True,
+        view_fig=False,
         save_fig=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )

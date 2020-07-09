@@ -1,0 +1,5 @@
+,analysis_type,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI
+,,count,mean,std,min,25%,50%,75%,max
+0,Correction Bolus Analysis,23970.0,1.45,1.89,0.0,0.24,0.65,1.8,16.55
+1,Meal Bolus Analysis,23970.0,0.9,4.23,0.0,0.26,0.56,1.02,184.25
+2,Temp Basal Analysis,23970.0,1.34,1.88,0.0,0.17,0.47,1.67,18.87
