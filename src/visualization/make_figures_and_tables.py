@@ -470,18 +470,18 @@ for bg_test_condition in summary_df_reduced["bg_test_condition"].unique():
 #############################
 # Define color dictionary
 score_dict = {
-    0: "0 - None",
-    1: "1 - Negligible",
-    2: "2 - Minor",
-    3: "3 - Serious",
-    4: "4 - Critical",
+    0: "0 - None<br>",
+    1: "1 - Negligible<br>",
+    2: "2 - Minor<br>",
+    3: "3 - Serious<br>",
+    4: "4 - Critical<br>",
 }
 color_dict = {
-    "0 - None": "#0F73C6",
-    "1 - Negligible": "#06B406",
-    "2 - Minor": "#D0C07F",
-    "3 - Serious": "#E18325",
-    "4 - Critical": "#9A3A39",
+    "0 - None<br>": "#0F73C6",
+    "1 - Negligible<br>": "#06B406",
+    "2 - Minor<br>": "#D0C07F",
+    "3 - Serious<br>": "#E18325",
+    "4 - Critical<br>": "#9A3A39",
 }
 summary_df_reduced["DKAI Risk Score String"] = summary_df_reduced["DKAI Risk Score"].replace(score_dict)
 summary_df_reduced["LBGI Risk Score String"] = summary_df_reduced["LBGI Risk Score"].replace(score_dict)
@@ -546,9 +546,8 @@ def make_boxplot(
     # If level_of_analysis is to show all analyses (no breakdown), show as single box.
     if level_of_analysis == "all":
         summary_fig = px.box(
-            table_df,
             x=None,
-            y=metric,
+            y=table_df[metric].apply(lambda x: x+1),
             #points="all",
             color_discrete_sequence=px.colors.qualitative.T10,
             notched=notched_boxplot,
@@ -558,29 +557,32 @@ def make_boxplot(
     # Otherwise show separate boxplot for each breakdown category.
     else:
         summary_fig = px.box(
-            table_df,
-            y=metric,
+            y=table_df[metric].apply(lambda x: x+1),
             #points = "all",
-            color=level_of_analysis,
+            color=table_df[level_of_analysis],
             color_discrete_sequence=px.colors.qualitative.T10,
             # can also explicitly define the sequence: ["red", "green", "blue"],
             notched=notched_boxplot,
-            facet_col=level_of_analysis,
+            facet_col=table_df[level_of_analysis],
             boxmode="overlay",
             log_y=True
         )
 
+    #TODO: adjust axes back to deal with adding +1 to all y values
 
     layout = go.Layout(
         title= "Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
         showlegend=True,
         yaxis=dict(
-            title=metric #, type=y_scale_type
+            title=metric, #, type=y_scale_type,
+            #range=[np.log(min(table_df[metric])+.01), np.log(max(table_df[metric])+1)]
         ),
         xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
         plot_bgcolor="#D3D3D3",
         legend_title=level_of_analysis_dict[level_of_analysis]
     )
+
+    summary_fig.update_traces(marker=dict(size=2, opacity=0.3))
 
     summary_fig.update_layout(layout)
 
@@ -607,38 +609,42 @@ def make_bubble_plot(
     if level_of_analysis == "all":
 
         df = table_df[[metric, metric+ " String"]]
-        grouped_df = df.groupby([metric, metric+ " String"]).size().reset_index(name="count")
+        grouped_df = df.groupby([metric, metric+ " String"]).size().reset_index(name="count").sort_values(by=metric, ascending=True)
+        grouped_df['percentage'] = (grouped_df["count"] / grouped_df["count"].sum()).apply(lambda x: "{:.1%}".format(x))
 
         summary_fig = px.scatter(
             y=grouped_df[metric],
             size=grouped_df["count"],
             color=grouped_df[metric + " String"],
+            text=grouped_df["percentage"],
             color_discrete_map=color_dict,
             size_max=25,
         )
+
+        summary_fig.update_traces(textposition='top center', textfont_size=8)
 
         layout = go.Layout(
             showlegend=True,
             title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
             yaxis=dict(
-                title=metric, tickvals=[0, 1, 2, 3, 4]
+                title=metric, tickvals=[0, 1, 2, 3, 4], range=[-.25, 4.25]
             ),
             xaxis=dict(type='category', showticklabels=False),
             plot_bgcolor="#D3D3D3",
-            legend_title="Tidepool " + metric,
+            legend_title="Tidepool " + metric + '<br>',
+            legend={'traceorder':'normal'}
         )
 
     else:
 
         df = table_df[[level_of_analysis, metric, metric+ " String"]]
-        grouped_df = (
-            df.groupby([level_of_analysis, metric, metric+ " String"]).size().reset_index(name="count")
-        )
-
+        grouped_df = df.groupby([level_of_analysis, metric, metric+ " String"]).size().reset_index(name="count").sort_values(by=[metric, level_of_analysis], ascending=True)
+        grouped_df['percentage'] = (grouped_df["count"] / grouped_df["count"].sum()).apply(lambda x: "{:.1%}".format(x))
 
         summary_fig = px.scatter(
             x=grouped_df[level_of_analysis],
             y=grouped_df[metric],
+            text=grouped_df["percentage"],
             size=grouped_df["count"],
             color=grouped_df[metric+ " String"],
             color_discrete_map=color_dict,
@@ -646,6 +652,8 @@ def make_bubble_plot(
             #colorscale="RdYlGn",
             size_max=25,
         )
+
+        summary_fig.update_traces(textposition='top center', textfont_size=8)
 
         if level_of_analysis=="analysis_type":
             tickangle=45
@@ -656,11 +664,12 @@ def make_bubble_plot(
             showlegend=True,
             title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
             yaxis=dict(
-                title=metric, tickvals=[0, 1, 2, 3, 4]
+                title=metric, tickvals=[0, 1, 2, 3, 4], range=[-.25, 4.25]
             ),
             xaxis=dict(title=level_of_analysis_dict[level_of_analysis], type='category', tickangle=tickangle),
             plot_bgcolor="#D3D3D3",
-            legend_title="Tidepool " + metric,
+            legend_title="Tidepool " + metric + '<br>',
+            legend={'traceorder':'normal'}
         )
 
     summary_fig.update_layout(layout)
@@ -818,7 +827,6 @@ for analysis_level, metric, axis_scale in itertools.product(
         view_fig=False,
         save_fig=True  # This is not working, need to figure out why
     )
-
 
     make_histogram(
         summary_df_reduced,
