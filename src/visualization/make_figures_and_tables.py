@@ -547,7 +547,7 @@ def make_boxplot(
     if level_of_analysis == "all":
         summary_fig = px.box(
             x=None,
-            y=table_df[metric].apply(lambda x: x+1),
+            y= table_df[metric] #table_df[metric].apply(lambda x: x+1),
             #points="all",
             color_discrete_sequence=px.colors.qualitative.T10,
             notched=notched_boxplot,
@@ -557,7 +557,7 @@ def make_boxplot(
     # Otherwise show separate boxplot for each breakdown category.
     else:
         summary_fig = px.box(
-            y=table_df[metric].apply(lambda x: x+1),
+            y=table_df[metric] #table_df[metric].apply(lambda x: x+1),
             #points = "all",
             color=table_df[level_of_analysis],
             color_discrete_sequence=px.colors.qualitative.T10,

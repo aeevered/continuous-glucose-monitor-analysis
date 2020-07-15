@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from save_view_fig import save_view_fig
 
+#Read in data file
 insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "2020-07-02")
 summary_metrics_file = "2020-07-02-06-41-20-summary.csv"
 
@@ -35,7 +36,7 @@ color_dict = {
 }
 summary_metrics_df["dka_risk_score_str"] = summary_metrics_df["dka_risk_score"].replace(score_dict)
 
-
+# Visualization Functions
 def create_scatterplot_v1(
     table_df,
     x_value,
@@ -150,51 +151,7 @@ def create_scatterplot_v2(
 
     return
 
-
-# Create Scatterplot Figure
-create_scatterplot_v1(
-    table_df=summary_metrics_df,
-    x_value="sbr",
-    y_value="loop_max_basal_rate",
-    hover_value="dka_index",
-    color_value_column="dka_risk_score",
-    color_dict=color_dict,
-    score_dict=score_dict,
-    legend_title="DKAI Risk Score",
-    title="DKAI Risk Score by Basal Rate",
-    x_title="Scheduled Basal Rate",
-    y_title="Loop Max Allowable Basal Rate",
-    image_type="png",
-    figure_name="summary-metrics-dkai-riskscore-scatterplot-v1",
-    analysis_name="insulin-pulses",
-    view_fig=True,
-    save_fig=True,
-    save_fig_path=os.path.join(
-        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
-    ),
-    width=600,
-    height=700,
-)
-
-
-create_scatterplot_v2(
-    summary_metrics_df=summary_metrics_df,
-    color_dict=color_dict,
-    image_type="png",
-    figure_name="summary-metrics-dkai-riskscore-scatterplot-v2",
-    analysis_name="insulin-pulses",
-    view_fig=True,
-    save_fig=False,
-    save_fig_path=os.path.join(
-        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
-    ),
-    width=600,
-    height=500,
-)
-
 # Simulation Example Plot
-
-
 def make_scatter_trace(x_value, y_value, color, symbol, name, style, dash, line_shape, fill, opacity, size):
     trace = go.Scatter(
         x=x_value,
@@ -311,22 +268,6 @@ def create_simulation_figure(
 
     y_axis_labels = ["BG (mg/dL)", "Insulin (U or U/hr)", "Insulin (U)", "Insulin(U)"]
 
-    # For stem plot
-    # Possibly change this to px.scatter
-
-    """
-    fig.append_trace(px.scatter(
-        data_frame=sim_df,
-        x="hours_post_simulation",
-        y="undelivered_basal_insulin",
-        error_y=np.zeros(len(sim_df)),
-        error_y_minus="undelivered_basal_insulin",
-        size=np.ones(len(simulation_example_df)),
-        size_max=7.5,
-        color_discrete_sequence=["#9A3A39"],
-    ), row=3, col=1)
-    """
-
     fig.append_trace(
         make_bar_trace(
             sim_df=sim_df,
@@ -383,6 +324,50 @@ def create_simulation_figure(
 
     return
 
+
+##### Create Scatterplot Figures #####
+create_scatterplot_v1(
+    table_df=summary_metrics_df,
+    x_value="sbr",
+    y_value="loop_max_basal_rate",
+    hover_value="dka_index",
+    color_value_column="dka_risk_score",
+    color_dict=color_dict,
+    score_dict=score_dict,
+    legend_title="DKAI Risk Score",
+    title="DKAI Risk Score by Basal Rate",
+    x_title="Scheduled Basal Rate",
+    y_title="Loop Max Allowable Basal Rate",
+    image_type="png",
+    figure_name="summary-metrics-dkai-riskscore-scatterplot-v1",
+    analysis_name="insulin-pulses",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join(
+        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
+    ),
+    width=600,
+    height=700,
+)
+
+
+create_scatterplot_v2(
+    summary_metrics_df=summary_metrics_df,
+    color_dict=color_dict,
+    image_type="png",
+    figure_name="summary-metrics-dkai-riskscore-scatterplot-v2",
+    analysis_name="insulin-pulses",
+    view_fig=True,
+    save_fig=False,
+    save_fig_path=os.path.join(
+        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
+    ),
+    width=600,
+    height=500,
+)
+
+
+#### Create Simulation Figures ####
 
 # Iterate through all of the files
 for filename in os.listdir(insulin_pulse_file_location):

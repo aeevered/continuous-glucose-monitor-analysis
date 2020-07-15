@@ -1,0 +1,5 @@
+,analysis_type,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI
+,,count,mean,std,min,25%,50%,75%,max
+0,correction_bolus,810.0,0.05,0.25,0.0,0.0,0.0,0.0,2.5
+1,meal_bolus,810.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+2,temp_basal_only,810.0,0.9,1.31,0.0,0.0,0.0,1.83,3.67
