@@ -1,5 +1,0 @@
-,analysis_type,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI,DKAI
-,,count,mean,std,min,25%,50%,75%,max
-0,Correction Bolus Analysis,23970.0,0.34,0.84,0.0,0.0,0.0,0.0,6.67
-1,Meal Bolus Analysis,23970.0,0.07,0.31,0.0,0.0,0.0,0.0,3.58
-2,Temp Basal Analysis,23970.0,0.36,0.85,0.0,0.0,0.0,0.0,6.75
