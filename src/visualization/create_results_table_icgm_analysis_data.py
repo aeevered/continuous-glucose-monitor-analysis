@@ -356,6 +356,8 @@ def make_boxplot(
 
     # Otherwise show separate boxplot for each breakdown category.
     else:
+        table_df = table_df.sort_values([level_of_analysis])
+
         summary_fig = px.box(
             y=table_df[metric].apply(lambda x: x+1),
             #points = "all",
@@ -370,21 +372,22 @@ def make_boxplot(
 
     #TODO: adjust axes back to deal with adding +1 to all y values
 
-    layout = go.Layout(
+    summary_fig.update_layout(
         title= "Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
         showlegend=True,
-        yaxis=dict(
-            title=metric, #, type=y_scale_type,
-            #range=[np.log(min(table_df[metric])+.01), np.log(max(table_df[metric])+1)]
-        ),
         xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
+        yaxis=dict(title=metric),
         plot_bgcolor="#D3D3D3",
         legend_title=level_of_analysis_dict[level_of_analysis]
     )
 
-    summary_fig.update_traces(marker=dict(size=2, opacity=0.3))
+    summary_fig.update_yaxes(
+        type=y_scale_type,
+        tickvals=[1, 2, 3, 6, 11],
+        ticktext=["0", "1", "2", "5", "10"]
+    )
 
-    summary_fig.update_layout(layout)
+    summary_fig.update_traces(marker=dict(size=2, opacity=0.3))
 
     summary_fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", "")))
 
