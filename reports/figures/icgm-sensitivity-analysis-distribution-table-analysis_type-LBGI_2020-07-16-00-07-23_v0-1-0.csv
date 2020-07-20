@@ -1,5 +1,0 @@
-,analysis_type,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI,LBGI
-,,count,mean,std,min,25%,50%,75%,max
-0,correction_bolus,810.0,0.34,0.59,0.0,0.0,0.07,0.33,6.52
-1,meal_bolus,810.0,0.28,0.5,0.0,0.0,0.0,0.32,2.05
-2,temp_basal_only,810.0,6.44,17.88,0.0,0.1,0.63,2.04,161.56
