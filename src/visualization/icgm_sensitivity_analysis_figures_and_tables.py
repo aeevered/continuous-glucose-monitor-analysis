@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import numpy as np
 import warnings
-import operator
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.offline import plot
@@ -14,7 +13,9 @@ from save_view_fig import save_view_fig
 import tarfile
 
 ## Functions from data-science-metrics (ultimately want to just pull in that repo)
-def approximate_steady_state_iob_from_sbr(scheduled_basal_rate: np.float64) -> np.float64:
+def approximate_steady_state_iob_from_sbr(
+    scheduled_basal_rate: np.float64,
+) -> np.float64:
     """
     Approximate the amount of insulin-on-board from user's scheduled basal rate (sbr). This value
     comes from running the Tidepool Simple Diabetes Metabolism Model with the user's sbr for 8 hours.
@@ -30,6 +31,7 @@ def approximate_steady_state_iob_from_sbr(scheduled_basal_rate: np.float64) -> n
     """
     # TODO: need test coverage here, which can be done by calling the diabetes metabolism model
     return scheduled_basal_rate * 2.111517
+
 
 def blood_glucose_risk_index(
     bg_array: "np.ndarray[np.float64]", round_to_n_digits: int = 2
@@ -68,6 +70,7 @@ def blood_glucose_risk_index(
         bgri,
     )
 
+
 def lbgi_risk_score(lbgi: np.float64) -> int:
     """
     Calculate the Tidepool Risk Score associated with the LBGI
@@ -93,8 +96,11 @@ def lbgi_risk_score(lbgi: np.float64) -> int:
         risk_score = 0
     return risk_score
 
+
 def dka_index(
-    iob_array: "np.ndarray[np.float64]", scheduled_basal_rate: np.float64, round_to_n_digits: int = 3
+    iob_array: "np.ndarray[np.float64]",
+    scheduled_basal_rate: np.float64,
+    round_to_n_digits: int = 3,
 ):
     """
     Calculate the Tidepool DKA Index, which is the number of hours with less than 50% of the
@@ -119,7 +125,9 @@ def dka_index(
     steady_state_iob = approximate_steady_state_iob_from_sbr(scheduled_basal_rate)
     fifty_percent_steady_state_iob = steady_state_iob / 2
     indices_with_less_50percent_sbr_iob = iob_array < fifty_percent_steady_state_iob
-    hours_with_less_50percent_sbr_iob = np.sum(indices_with_less_50percent_sbr_iob) * 5 / 60
+    hours_with_less_50percent_sbr_iob = (
+        np.sum(indices_with_less_50percent_sbr_iob) * 5 / 60
+    )
 
     return round(hours_with_less_50percent_sbr_iob, round_to_n_digits)
 
@@ -149,6 +157,7 @@ def dka_risk_score(hours_with_less_50percent_sbr_iob: np.float64):
         risk_score = 0
     return risk_score
 
+
 def _validate_input(lower_threshold: int, upper_threshold: int):
     if any(num < 0 for num in [lower_threshold, upper_threshold]):
         raise Exception("lower and upper thresholds must be a non-negative number")
@@ -159,46 +168,59 @@ def _validate_input(lower_threshold: int, upper_threshold: int):
 
 def _validate_bg(bg_array: "np.ndarray[np.float64]"):
     if (bg_array < 38).any():
-        warnings.warn("Some values in the passed in array had glucose values less than 38.")
+        warnings.warn(
+            "Some values in the passed in array had glucose values less than 38."
+        )
 
     if (bg_array > 402).any():
-        warnings.warn("Some values in the passed in array had glucose values greater than 402.")
+        warnings.warn(
+            "Some values in the passed in array had glucose values greater than 402."
+        )
 
     if (bg_array < 1).any():
-        warnings.warn("Some values in the passed in array had glucose values less than 1.")
-        #raise Exception("Some values in the passed in array had glucose values less than 1.")
+        warnings.warn(
+            "Some values in the passed in array had glucose values less than 1."
+        )
+        # raise Exception("Some values in the passed in array had glucose values less than 1.")
 
     if (bg_array > 1000).any():
-        warnings.warn("Some values in the passed in array had glucose values less than 1.")
-        #raise Exception("Some values in the passed in array had glucose values greater than 1000.")
+        warnings.warn(
+            "Some values in the passed in array had glucose values less than 1."
+        )
+        # raise Exception("Some values in the passed in array had glucose values greater than 1000.")
+
 
 ### New Code
+
 
 def get_data(filename, simulation_df):
     bg_test_condition = filename.split(".")[1].replace("bg", "")
     analysis_type = filename.split(".")[3]
-    LBGI = blood_glucose_risk_index(bg_array = simulation_df["bg"])[0]
+    LBGI = blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
     LBGI_RS = lbgi_risk_score(LBGI)
     DKAI = dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
     DKAI_RS = dka_risk_score(DKAI)
     return [bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
 
-#Iterate through all of the files
+
+# Iterate through all of the files
 data = []
 
 path = os.path.join("..", "..", "data", "processed")
-folder_name = 'icgm-sensitivity-analysis-results-ALL-RESULTS-2020-07-12.gz'
+folder_name = "icgm-sensitivity-analysis-results-ALL-RESULTS-2020-07-12.gz"
 compressed_filestream = tarfile.open(os.path.join(path, folder_name))
-file_list = [filename for filename in compressed_filestream.getnames() if '.csv' in filename]
+file_list = [
+    filename for filename in compressed_filestream.getnames() if ".csv" in filename
+]
 
 for filename in file_list:
     print(filename)
     simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
 
-    #Add in the data
+    # Add in the data
     data.append(get_data(filename, simulation_df))
 
-'''
+"""
 #This is for loading in the sample files
 simulation_file_location = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-3vpp-sample-2020-07-12")
 
@@ -213,17 +235,22 @@ for filename in os.listdir(simulation_file_location):
     #Add in the data
     data.append(get_data(filename, simulation_df))
 
-'''
+"""
 
-columns = ["bg_test_condition", "analysis_type","LBGI", "LBGI Risk Score", "DKAI",  "DKAI Risk Score"]
+columns = [
+    "bg_test_condition",
+    "analysis_type",
+    "LBGI",
+    "LBGI Risk Score",
+    "DKAI",
+    "DKAI Risk Score",
+]
 
 results_df = pd.DataFrame(data, columns=columns)
 
 # rename the analysis types
 results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
-results_df.replace(
-    {"correctionBolus": "Correction Bolus Analysis"}, inplace=True
-)
+results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
 
 print(results_df)
 
@@ -249,9 +276,9 @@ results_df["LBGI Risk Score String"] = results_df["LBGI Risk Score"].replace(sco
 
 #############################
 level_of_analysis_dict = {
-    "all":'All Analyses',
+    "all": "All Analyses",
     "analysis_type": "Analysis Type",
-    "bg_test_condition": "BG Test Condition"
+    "bg_test_condition": "BG Test Condition",
 }
 
 
@@ -264,6 +291,7 @@ level_of_analysis_dict = {
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 # TODO: automatically grab the code version to add to the figures generated
 code_version = "v0-1-0"
+
 
 def make_table(
     table_df,
@@ -327,6 +355,7 @@ def make_table(
 
     return
 
+
 def make_boxplot(
     table_df,
     image_type="png",
@@ -361,11 +390,11 @@ def make_boxplot(
     if level_of_analysis == "all":
         summary_fig = px.box(
             x=None,
-            y=table_df[metric].apply(lambda x: x+1),
-            #points="all",
+            y=table_df[metric].apply(lambda x: x + 1),
+            # points="all",
             color_discrete_sequence=px.colors.qualitative.T10,
             notched=notched_boxplot,
-            log_y=True
+            log_y=True,
         )
 
     # Otherwise show separate boxplot for each breakdown category.
@@ -373,40 +402,51 @@ def make_boxplot(
         table_df = table_df.sort_values([level_of_analysis])
 
         summary_fig = px.box(
-            y=table_df[metric].apply(lambda x: x+1),
-            #points = "all",
+            y=table_df[metric].apply(lambda x: x + 1),
+            # points = "all",
             color=table_df[level_of_analysis],
             color_discrete_sequence=px.colors.qualitative.T10,
             # can also explicitly define the sequence: ["red", "green", "blue"],
             notched=notched_boxplot,
             facet_col=table_df[level_of_analysis],
             boxmode="overlay",
-            log_y=True
+            log_y=True,
         )
 
-    #TODO: adjust axes back to deal with adding +1 to all y values
+    # TODO: adjust axes back to deal with adding +1 to all y values
 
     summary_fig.update_layout(
-        title= "Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
+        title="Distribution of "
+        + metric
+        + " By "
+        + level_of_analysis_dict[level_of_analysis],
         showlegend=True,
         xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
         yaxis=dict(title=metric),
         plot_bgcolor="#D3D3D3",
-        legend_title=level_of_analysis_dict[level_of_analysis]
+        legend_title=level_of_analysis_dict[level_of_analysis],
     )
 
     summary_fig.update_yaxes(
         type=y_scale_type,
         tickvals=[1, 2, 3, 6, 11],
-        ticktext=["0", "1", "2", "5", "10"]
+        ticktext=["0", "1", "2", "5", "10"],
     )
 
     summary_fig.update_traces(marker=dict(size=2, opacity=0.3))
 
-    summary_fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", "")))
+    summary_fig.for_each_annotation(
+        lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", ""))
+    )
 
     save_view_fig(
-        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+        summary_fig,
+        image_type,
+        figure_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
 
     return
@@ -425,9 +465,16 @@ def make_bubble_plot(
 ):
     if level_of_analysis == "all":
 
-        df = table_df[[metric, metric+ " String"]]
-        grouped_df = df.groupby([metric, metric+ " String"]).size().reset_index(name="count").sort_values(by=metric, ascending=True)
-        grouped_df['percentage'] = (grouped_df["count"] / grouped_df["count"].sum()).apply(lambda x: "{:.1%}".format(x))
+        df = table_df[[metric, metric + " String"]]
+        grouped_df = (
+            df.groupby([metric, metric + " String"])
+            .size()
+            .reset_index(name="count")
+            .sort_values(by=metric, ascending=True)
+        )
+        grouped_df["percentage"] = (
+            grouped_df["count"] / grouped_df["count"].sum()
+        ).apply(lambda x: "{:.1%}".format(x))
 
         summary_fig = px.scatter(
             y=grouped_df[metric],
@@ -438,66 +485,84 @@ def make_bubble_plot(
             size_max=25,
         )
 
-        summary_fig.update_traces(textposition='top center', textfont_size=8)
+        summary_fig.update_traces(textposition="top center", textfont_size=8)
 
         layout = go.Layout(
             showlegend=True,
-            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
-            yaxis=dict(
-                title=metric, tickvals=[0, 1, 2, 3, 4], range=[-.25, 4.25]
-            ),
-            xaxis=dict(type='category', showticklabels=False),
+            title="Distribution of "
+            + metric
+            + " Across "
+            + level_of_analysis_dict[level_of_analysis],
+            yaxis=dict(title=metric, tickvals=[0, 1, 2, 3, 4], range=[-0.25, 4.25]),
+            xaxis=dict(type="category", showticklabels=False),
             plot_bgcolor="#D3D3D3",
-            legend_title="Tidepool " + metric + '<br>',
-            legend={'traceorder':'normal'}
+            legend_title="Tidepool " + metric + "<br>",
+            legend={"traceorder": "normal"},
         )
 
     else:
 
-        df = table_df[[level_of_analysis, metric, metric+ " String"]]
-        grouped_df = df.groupby([level_of_analysis, metric, metric+ " String"]).size().reset_index(name="count").sort_values(by=[metric, level_of_analysis], ascending=True)
-        grouped_df['percentage'] = (grouped_df["count"] / grouped_df["count"].sum()).apply(lambda x: "{:.1%}".format(x))
+        df = table_df[[level_of_analysis, metric, metric + " String"]]
+        grouped_df = (
+            df.groupby([level_of_analysis, metric, metric + " String"])
+            .size()
+            .reset_index(name="count")
+            .sort_values(by=[metric, level_of_analysis], ascending=True)
+        )
+        grouped_df["percentage"] = (
+            grouped_df["count"] / grouped_df["count"].sum()
+        ).apply(lambda x: "{:.1%}".format(x))
 
         summary_fig = px.scatter(
             x=grouped_df[level_of_analysis],
             y=grouped_df[metric],
             text=grouped_df["percentage"],
             size=grouped_df["count"],
-            color=grouped_df[metric+ " String"],
+            color=grouped_df[metric + " String"],
             color_discrete_map=color_dict,
-            #color=grouped_df["count"],
-            #colorscale="RdYlGn",
+            # color=grouped_df["count"],
+            # colorscale="RdYlGn",
             size_max=25,
         )
 
-        summary_fig.update_traces(textposition='top center', textfont_size=8)
+        summary_fig.update_traces(textposition="top center", textfont_size=8)
 
-        if level_of_analysis=="analysis_type":
-            tickangle=45
+        if level_of_analysis == "analysis_type":
+            tickangle = 45
         else:
-            tickangle=0
+            tickangle = 0
 
         layout = go.Layout(
             showlegend=True,
-            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
-            yaxis=dict(
-                title=metric, tickvals=[0, 1, 2, 3, 4], range=[-.25, 4.25]
+            title="Distribution of "
+            + metric
+            + " Across "
+            + level_of_analysis_dict[level_of_analysis],
+            yaxis=dict(title=metric, tickvals=[0, 1, 2, 3, 4], range=[-0.25, 4.25]),
+            xaxis=dict(
+                title=level_of_analysis_dict[level_of_analysis],
+                type="category",
+                tickangle=tickangle,
             ),
-            xaxis=dict(title=level_of_analysis_dict[level_of_analysis], type='category', tickangle=tickangle),
             plot_bgcolor="#D3D3D3",
-            legend_title="Tidepool " + metric + '<br>',
-            legend={'traceorder':'normal'}
+            legend_title="Tidepool " + metric + "<br>",
+            legend={"traceorder": "normal"},
         )
 
     summary_fig.update_layout(layout)
 
-
-
     save_view_fig(
-        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+        summary_fig,
+        image_type,
+        figure_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
 
     return
+
 
 def make_histogram(
     table_df,
@@ -518,18 +583,19 @@ def make_histogram(
         summary_fig = px.histogram(
             x=grouped_df[metric],
             nbins=500,
-            #log_x=True,
-            color_discrete_sequence=px.colors.qualitative.T10
+            # log_x=True,
+            color_discrete_sequence=px.colors.qualitative.T10,
         )
 
         layout = go.Layout(
             showlegend=True,
-            title="Distribution of " + metric + " By " + level_of_analysis_dict[level_of_analysis],
+            title="Distribution of "
+            + metric
+            + " By "
+            + level_of_analysis_dict[level_of_analysis],
             plot_bgcolor="#D3D3D3",
-            xaxis=dict(
-                title=metric
-            ),
-            legend_title=level_of_analysis_dict[level_of_analysis]
+            xaxis=dict(title=metric),
+            legend_title=level_of_analysis_dict[level_of_analysis],
         )
 
     else:
@@ -542,57 +608,67 @@ def make_histogram(
         if level_of_analysis == "analysis_type":
             summary_fig = px.histogram(
                 x=grouped_df[metric],
-                #log_x=True,
+                # log_x=True,
                 facet_row=grouped_df[level_of_analysis],
                 nbins=500,
                 color_discrete_sequence=px.colors.qualitative.T10,
-                color=grouped_df[level_of_analysis]
+                color=grouped_df[level_of_analysis],
             )
         else:
             summary_fig = px.histogram(
                 x=grouped_df[metric],
-                #log_x=True,
+                # log_x=True,
                 facet_col=grouped_df[level_of_analysis],
                 facet_col_wrap=3,
                 nbins=500,
                 color_discrete_sequence=px.colors.qualitative.T10,
-                color=grouped_df[level_of_analysis]
+                color=grouped_df[level_of_analysis],
             )
 
         layout = go.Layout(
             showlegend=True,
-            title="Distribution of " + metric + " Across " + level_of_analysis_dict[level_of_analysis],
+            title="Distribution of "
+            + metric
+            + " Across "
+            + level_of_analysis_dict[level_of_analysis],
             plot_bgcolor="#D3D3D3",
-            #xaxis=dict(title=metric),
+            # xaxis=dict(title=metric),
             legend_title=level_of_analysis_dict[level_of_analysis],
         )
 
     summary_fig.update_layout(layout)
 
-    summary_fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", "")))
+    summary_fig.for_each_annotation(
+        lambda a: a.update(text=a.text.split("=")[1].replace(" Analysis", ""))
+    )
 
     save_view_fig(
-        summary_fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path
+        summary_fig,
+        image_type,
+        figure_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
 
     return
 
 
 def make_distribution_table(
-        table_df,
-        image_type="png",
-        table_name="<number-or-name>-table",
-        analysis_name="analysis-<name>",
-        metric="LBGI",
-        level_of_analysis="analysis_type",
-        view_fig=True,
-        save_fig=True,
-        save_csv=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures")
+    table_df,
+    image_type="png",
+    table_name="<number-or-name>-table",
+    analysis_name="analysis-<name>",
+    metric="LBGI",
+    level_of_analysis="analysis_type",
+    view_fig=True,
+    save_fig=True,
+    save_csv=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
 
-    header = [metric]+[""]*8
-
+    header = [metric] + [""] * 8
 
     if level_of_analysis == "all":
         df = table_df[[metric]]
@@ -601,12 +677,14 @@ def make_distribution_table(
         header = [metric] + [""] * 7
     else:
         df = table_df[[level_of_analysis, metric]]
-        distribution_df = df.groupby(level_of_analysis)[[metric]].describe().reset_index()
+        distribution_df = (
+            df.groupby(level_of_analysis)[[metric]].describe().reset_index()
+        )
         header = [metric] + [""] * 8
 
     distribution_df = distribution_df.round(2)
 
-    #distribution_df.iloc[-1] = header
+    # distribution_df.iloc[-1] = header
 
     make_table(
         distribution_df,
@@ -623,11 +701,12 @@ def make_distribution_table(
     )
     return
 
+
 # Iterate through each metric and analysis_level category shown below and create boxplot
 # figure with both log scale and linear scale.
 metrics = ["LBGI", "DKAI"]
 analysis_levels = ["bg_test_condition", "analysis_type", "all"]
-y_axis_scales = ["log"] #, "linear"]
+y_axis_scales = ["log"]  # , "linear"]
 
 for analysis_level, metric, axis_scale in itertools.product(
     analysis_levels, metrics, y_axis_scales
@@ -642,7 +721,7 @@ for analysis_level, metric, axis_scale in itertools.product(
         y_scale_type=axis_scale,
         image_type="png",
         view_fig=False,
-        save_fig=True  # This is not working, need to figure out why
+        save_fig=True,  # This is not working, need to figure out why
     )
 
     make_histogram(
@@ -654,7 +733,7 @@ for analysis_level, metric, axis_scale in itertools.product(
         image_type="png",
         view_fig=False,
         save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures")
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
 
     make_distribution_table(
@@ -666,7 +745,7 @@ for analysis_level, metric, axis_scale in itertools.product(
         image_type="png",
         view_fig=False,
         save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures")
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
 
 
@@ -723,7 +802,7 @@ def get_summary_stats(df, level_of_analysis_name):
 
 # %% first remove any/all iCGM sensor batches that did not meet iCGM special controls
 
-#summary_df_reduced = results_df[results_df["ICGM_PASS%"] == 100]
+# summary_df_reduced = results_df[results_df["ICGM_PASS%"] == 100]
 summary_df_reduced = results_df.copy()
 
 # first do all analyses

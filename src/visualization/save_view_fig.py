@@ -3,6 +3,7 @@ import os
 import plotly.io as pio
 import datetime as dt
 
+
 def save_view_fig(
     fig,
     image_type="png",

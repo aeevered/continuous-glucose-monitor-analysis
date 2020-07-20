@@ -7,16 +7,20 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from save_view_fig import save_view_fig
 
-#Read in data file
+# Read in data file
 insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "2020-07-02")
 summary_metrics_file = "2020-07-02-06-41-20-summary.csv"
 
-summary_metrics_path = os.path.abspath(os.path.join(insulin_pulse_file_location, summary_metrics_file))
+summary_metrics_path = os.path.abspath(
+    os.path.join(insulin_pulse_file_location, summary_metrics_file)
+)
 
 summary_metrics_df = pd.read_csv(summary_metrics_path)
 
 # Summary Plot
-summary_metrics_df.sort_values("dka_risk_score", inplace=True)  # sort so that legend is in the right order
+summary_metrics_df.sort_values(
+    "dka_risk_score", inplace=True
+)  # sort so that legend is in the right order
 summary_metrics_df["dka_index_circle_size"] = summary_metrics_df["dka_index"] + 1.0
 
 # Define color dictionary
@@ -34,7 +38,9 @@ color_dict = {
     "3 - Serious": "#E18325",
     "4 - Critical": "#9A3A39",
 }
-summary_metrics_df["dka_risk_score_str"] = summary_metrics_df["dka_risk_score"].replace(score_dict)
+summary_metrics_df["dka_risk_score_str"] = summary_metrics_df["dka_risk_score"].replace(
+    score_dict
+)
 
 # Visualization Functions
 def create_scatterplot_v1(
@@ -71,15 +77,34 @@ def create_scatterplot_v1(
                 hovertext=table_df[hover_value],
                 name=score_dict[value],
                 showlegend=True,
-                marker=dict(color=[color_dict[score_dict[value]]] * len(df.index), size=8, line_width=1, opacity=0.7,),
+                marker=dict(
+                    color=[color_dict[score_dict[value]]] * len(df.index),
+                    size=8,
+                    line_width=1,
+                    opacity=0.7,
+                ),
             )
         )
 
     layout = go.Layout(
         title=title,
         legend_title_text=legend_title,
-        xaxis=dict(title=x_title, gridcolor="rgb(255, 255, 255)", gridwidth=2, tickmode="linear", tick0=0, dtick=0.05,),
-        yaxis=dict(title=y_title, gridcolor="rgb(255, 255, 255)", gridwidth=2, type="linear", tick0=0, dtick=0.5,),
+        xaxis=dict(
+            title=x_title,
+            gridcolor="rgb(255, 255, 255)",
+            gridwidth=2,
+            tickmode="linear",
+            tick0=0,
+            dtick=0.05,
+        ),
+        yaxis=dict(
+            title=y_title,
+            gridcolor="rgb(255, 255, 255)",
+            gridwidth=2,
+            type="linear",
+            tick0=0,
+            dtick=0.5,
+        ),
         paper_bgcolor="rgb(243, 243, 243)",
         plot_bgcolor="rgb(243, 243, 243)",
     )
@@ -99,7 +124,6 @@ def create_scatterplot_v1(
     )
 
     return
-
 
 def create_scatterplot_v2(
     summary_metrics_df=summary_metrics_df,
@@ -128,9 +152,12 @@ def create_scatterplot_v2(
         title="Risk of DKA Associated with Missing Insulin Pulses",
         showlegend=True,
         yaxis=dict(
-            title="Maximum Allowable Basal Rate (Loop Setting)", tickvals=[0.05, 0.1, 0.15, 0.2, 0.5, 1, 2, 5, 7],
+            title="Maximum Allowable Basal Rate (Loop Setting)",
+            tickvals=[0.05, 0.1, 0.15, 0.2, 0.5, 1, 2, 5, 7],
         ),
-        xaxis=dict(title="Scheduled Basal Rate (U/hr)", tickvals=np.arange(0.05, 0.75, 0.05)),
+        xaxis=dict(
+            title="Scheduled Basal Rate (U/hr)", tickvals=np.arange(0.05, 0.75, 0.05)
+        ),
         plot_bgcolor="#D3D3D3",
         legend_title="Tidepool DKAI Risk Score",
     )
@@ -151,8 +178,11 @@ def create_scatterplot_v2(
 
     return
 
+
 # Simulation Example Plot
-def make_scatter_trace(x_value, y_value, color, symbol, name, style, dash, line_shape, fill, opacity, size):
+def make_scatter_trace(
+    x_value, y_value, color, symbol, name, style, dash, line_shape, fill, opacity, size
+):
     trace = go.Scatter(
         x=x_value,
         y=y_value,
@@ -171,7 +201,13 @@ def make_scatter_trace(x_value, y_value, color, symbol, name, style, dash, line_
 def make_bar_trace(
     sim_df, x_value, y_value, marker_color, name,
 ):
-    trace = go.Bar(x=sim_df[x_value], y=sim_df[y_value], name=name, marker_color=marker_color, showlegend=False,)
+    trace = go.Bar(
+        x=sim_df[x_value],
+        y=sim_df[y_value],
+        name=name,
+        marker_color=marker_color,
+        showlegend=False,
+    )
 
     return trace
 
@@ -222,14 +258,20 @@ def create_simulation_figure(
 ):
 
     sim_df["five_minute_marks"] = sim_df.index
-    sim_df["minutes_post_simulation"] = sim_df["five_minute_marks"].apply(lambda x: x * 5)
+    sim_df["minutes_post_simulation"] = sim_df["five_minute_marks"].apply(
+        lambda x: x * 5
+    )
     sim_df["hours_post_simulation"] = sim_df["minutes_post_simulation"] / 60
 
     # Make Subplots
     fig = make_subplots(
         rows=3,
         cols=1,
-        subplot_titles=("BG Over Time", "Delivered Basal Insulin", "Undelivered Basal Insulin Pulses",),
+        subplot_titles=(
+            "BG Over Time",
+            "Delivered Basal Insulin",
+            "Undelivered Basal Insulin Pulses",
+        ),
         vertical_spacing=0.15,
     )
 
@@ -256,7 +298,6 @@ def create_simulation_figure(
         "undelivered_basal_insulin",
     ]
     symbols = ["circle", "circle", "circle", "circle", "circle"]
-
     # For stem plots
     styles = ["markers", "markers", "lines", "lines", "markers"]
     sizes = [4, 4, 4, 3, 6]
@@ -281,8 +322,30 @@ def create_simulation_figure(
     )
 
     # Make and add all the traces
-    for (y_field, color, name, symbol, row, style, dash, line_shape, fill, opacity, size,) in zip(
-        y_fields, colors, names, symbols, rows, styles, dashes, line_shapes, fills, opacities, sizes,
+    for (
+        y_field,
+        color,
+        name,
+        symbol,
+        row,
+        style,
+        dash,
+        line_shape,
+        fill,
+        opacity,
+        size,
+    ) in zip(
+        y_fields,
+        colors,
+        names,
+        symbols,
+        rows,
+        styles,
+        dashes,
+        line_shapes,
+        fills,
+        opacities,
+        sizes,
     ):
         trace = make_scatter_trace(
             x_value=sim_df["hours_post_simulation"],
@@ -304,7 +367,9 @@ def create_simulation_figure(
 
     # Update xaxis properties
     for i in range(1, 5):
-        fig.update_xaxes(x_axis_properties(sim_df, show_title_axis_marks=True), row=i, col=1)
+        fig.update_xaxes(
+            x_axis_properties(sim_df, show_title_axis_marks=True), row=i, col=1
+        )
         fig.update_yaxes(y_axis_properties(y_axis_labels[i - 1]), row=i, col=1)
 
     for i in fig["layout"]["annotations"]:
@@ -344,7 +409,12 @@ create_scatterplot_v1(
     view_fig=True,
     save_fig=True,
     save_fig_path=os.path.join(
-        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
+        "..",
+        "..",
+        "reports",
+        "figures",
+        "insulin-pulses-risk-assessment",
+        "2020-06-30_wPyloopkit_Update",
     ),
     width=600,
     height=700,
@@ -360,7 +430,12 @@ create_scatterplot_v2(
     view_fig=True,
     save_fig=False,
     save_fig_path=os.path.join(
-        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
+        "..",
+        "..",
+        "reports",
+        "figures",
+        "insulin-pulses-risk-assessment",
+        "2020-06-30_wPyloopkit_Update",
     ),
     width=600,
     height=500,
@@ -376,7 +451,9 @@ for filename in os.listdir(insulin_pulse_file_location):
 
     if filename.endswith(".csv") and filename != "summary.csv":
 
-        simulation_example_path = os.path.abspath(os.path.join(insulin_pulse_file_location, filename))
+        simulation_example_path = os.path.abspath(
+            os.path.join(insulin_pulse_file_location, filename)
+        )
 
         simulation_example_df = pd.read_csv(simulation_example_path)
 
@@ -388,7 +465,12 @@ for filename in os.listdir(insulin_pulse_file_location):
             view_fig=False,
             save_fig=True,
             save_fig_path=os.path.join(
-                "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "2020-06-30_wPyloopkit_Update"
+                "..",
+                "..",
+                "reports",
+                "figures",
+                "insulin-pulses-risk-assessment",
+                "2020-06-30_wPyloopkit_Update",
             ),
             width=800,
             height=1000,

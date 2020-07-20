@@ -21,10 +21,14 @@ def create_insulin_pulse_animation(file_location, filename):
 
     # Additional data preparation
     sim_df["five_minute_marks"] = sim_df.index
-    sim_df["minutes_post_simulation"] = sim_df["five_minute_marks"].apply(lambda x: x * 5)
+    sim_df["minutes_post_simulation"] = sim_df["five_minute_marks"].apply(
+        lambda x: x * 5
+    )
     sim_df["hours_post_simulation"] = sim_df["minutes_post_simulation"] / 60
 
-    sim_df["temp_basal_sbr_if_nan"] = sim_df["temp_basal"].mask(pd.isnull, sim_df["sbr"])
+    sim_df["temp_basal_sbr_if_nan"] = sim_df["temp_basal"].mask(
+        pd.isnull, sim_df["sbr"]
+    )
 
     # Set fonts
     font = {"size": 8}
@@ -45,7 +49,13 @@ def create_insulin_pulse_animation(file_location, filename):
     axes[0].set_xlabel("Hours")
     axes[0].set_xlim(0, 24)
     axes[0].set_ylim(min(sim_df["bg"] - 10), max(sim_df["bg"] + 10))
-    axes[0].set_xticks(np.arange(min(sim_df["hours_post_simulation"]), max(sim_df["hours_post_simulation"]) + 1, 2.0))
+    axes[0].set_xticks(
+        np.arange(
+            min(sim_df["hours_post_simulation"]),
+            max(sim_df["hours_post_simulation"]) + 1,
+            2.0,
+        )
+    )
     axes[0].grid(True)
     axes[0].set_title(
         "Simulation where scheduled basal rate is "
@@ -58,21 +68,43 @@ def create_insulin_pulse_animation(file_location, filename):
     axes[1].set_ylabel("Insulin (U or U/hr)")
     axes[1].set_xlabel("Hours")
     axes[1].set_xlim(0, 24)
-    axes[1].set_ylim(0, max(max(sim_df["temp_basal"].fillna(sim_df["sbr"].max())) + 0.05, max(sim_df["iob"]) + 0.05))
-    axes[1].set_xticks(np.arange(min(sim_df["hours_post_simulation"]), max(sim_df["hours_post_simulation"]) + 1, 2.0))
+    axes[1].set_ylim(
+        0,
+        max(
+            max(sim_df["temp_basal"].fillna(sim_df["sbr"].max())) + 0.05,
+            max(sim_df["iob"]) + 0.05,
+        ),
+    )
+    axes[1].set_xticks(
+        np.arange(
+            min(sim_df["hours_post_simulation"]),
+            max(sim_df["hours_post_simulation"]) + 1,
+            2.0,
+        )
+    )
     axes[1].grid(True)
 
     axes[2].set_ylabel("Insulin (U or U/hr)")
     axes[2].set_xlabel("Hours")
     axes[2].set_xlim(0, 24)
     axes[2].set_ylim(0, max(sim_df["temp_basal"].fillna(sim_df["sbr"].max())) + 0.05)
-    axes[2].set_xticks(np.arange(min(sim_df["hours_post_simulation"]), max(sim_df["hours_post_simulation"]) + 1, 2.0))
+    axes[2].set_xticks(
+        np.arange(
+            min(sim_df["hours_post_simulation"]),
+            max(sim_df["hours_post_simulation"]) + 1,
+            2.0,
+        )
+    )
     axes[2].grid(True)
-    axes[2].set_title("Loop Decisions (scheduled basal rate and temp basals)", fontsize=8)
+    axes[2].set_title(
+        "Loop Decisions (scheduled basal rate and temp basals)", fontsize=8
+    )
 
     # Add in different animation traces
     for t in sim_df["hours_post_simulation"]:
-        sim_df_subset = sim_df[sim_df["hours_post_simulation"] < t]  # create subset of the data
+        sim_df_subset = sim_df[
+            sim_df["hours_post_simulation"] < t
+        ]  # create subset of the data
         axes[0].plot(
             sim_df_subset["hours_post_simulation"],
             sim_df_subset["bg"],
@@ -95,9 +127,14 @@ def create_insulin_pulse_animation(file_location, filename):
             sim_df_subset["sbr"] / 2,
             color="black",
             linewidth=1,
-            linestyle="--"
+            linestyle="--",
         )
-        axes[1].plot(sim_df_subset["hours_post_simulation"], sim_df_subset["iob"], color="#744AC2", linestyle="solid")
+        axes[1].plot(
+            sim_df_subset["hours_post_simulation"],
+            sim_df_subset["iob"],
+            color="#744AC2",
+            linestyle="solid",
+        )
         (markerLines, stemLines, baseLines) = axes[1].stem(
             sim_df_subset["hours_post_simulation"],
             sim_df_subset["delivered_basal_insulin"],
@@ -113,7 +150,7 @@ def create_insulin_pulse_animation(file_location, filename):
             sim_df_subset["sbr"],
             color="black",
             linewidth=1,
-            linestyle="--"
+            linestyle="--",
         )
 
         axes[2].fill_between(
@@ -121,7 +158,7 @@ def create_insulin_pulse_animation(file_location, filename):
             sim_df_subset["temp_basal_sbr_if_nan"],
             color="#008ECC",
             step="pre",
-            alpha=0.4
+            alpha=0.4,
         )
 
         axes[2].plot(
@@ -133,12 +170,16 @@ def create_insulin_pulse_animation(file_location, filename):
         )
 
         camera.snap()
-# %%
+    # %%
     # Create custom legend
     bg_labels = ["True BG", "Sensor EGV"]
     bg_colors = ["#B1BEFF", "#6AA84F"]
 
-    insulin_labels = ["50% of Scheduled Basal Rate", "Insulin on Board", "Delivered Basal Insulin Pulse"]  # , 'Temp Basal']
+    insulin_labels = [
+        "50% of Scheduled Basal Rate",
+        "Insulin on Board",
+        "Delivered Basal Insulin Pulse",
+    ]  # , 'Temp Basal']
     insulin_colors = ["black", "#744AC2", "#F9706B"]  # , "#008ECC"]
     insulin_line_styles = ["--", "-", "-"]  # ,'-']
 
@@ -147,13 +188,32 @@ def create_insulin_pulse_animation(file_location, filename):
     loop_decision_handles = []
 
     for c, l in zip(bg_colors, bg_labels):
-        bg_handles.append(Line2D([0], [0], color=c, label=l, marker="o", markersize=3, linestyle="None"))
+        bg_handles.append(
+            Line2D(
+                [0], [0], color=c, label=l, marker="o", markersize=3, linestyle="None"
+            )
+        )
 
     for c, l, s in zip(insulin_colors, insulin_labels, insulin_line_styles):
-        insulin_handles.append(Line2D([0], [0], color=c, label=l, linestyle=s, linewidth=1.5))
+        insulin_handles.append(
+            Line2D([0], [0], color=c, label=l, linestyle=s, linewidth=1.5)
+        )
 
-    loop_decision_handles.append(Line2D([0], [0], color="#008ECC", label="Loop Decision", linestyle="-", linewidth=1))
-    loop_decision_handles.append(Line2D([0], [0], color="black", label="Scheduled Basal Rate", linestyle="--", linewidth=1))
+    loop_decision_handles.append(
+        Line2D(
+            [0], [0], color="#008ECC", label="Loop Decision", linestyle="-", linewidth=1
+        )
+    )
+    loop_decision_handles.append(
+        Line2D(
+            [0],
+            [0],
+            color="black",
+            label="Scheduled Basal Rate",
+            linestyle="--",
+            linewidth=1,
+        )
+    )
 
     axes[0].legend(handles=bg_handles, loc="upper right")
     axes[1].legend(handles=insulin_handles, loc="upper right")
@@ -166,7 +226,7 @@ def create_insulin_pulse_animation(file_location, filename):
     animation = camera.animate()
 
     # Save and plot figure
-    #plt.show()
+    # plt.show()
 
     utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
     code_version = "v0-1-0"
@@ -182,12 +242,15 @@ def create_insulin_pulse_animation(file_location, filename):
 
     animation.save(animation_file_name + ".gif", writer="imagemagick", fps=5, dpi=100)
 
+
 # %%
 # TODO: split above into additional functions
 # TODO: add in parameters for saving and viewing fig
 
 # Create Figures
-insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "2020-06-30_wPyloopkit_Update")
+insulin_pulse_file_location = os.path.join(
+    "..", "..", "data", "raw", "2020-06-30_wPyloopkit_Update"
+)
 
 filename = "SBR 0.1 VPBR 0.1 MBR 0.2.csv"
 create_insulin_pulse_animation(insulin_pulse_file_location, filename)
