@@ -35,3 +35,28 @@ def save_view_fig(
         )
 
     return
+
+
+def save_animation(
+    animation,
+    figure_name="<number-or-name>",
+    analysis_name="analysis-<name>",
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    fps=5,
+    dpi=100,
+):
+    utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
+    code_version = "v0-1-0"
+
+    file_name = "{}-{}_{}_{}".format(
+        analysis_name, figure_name, utc_string, code_version
+    )
+
+    if save_fig:
+        animation.save(
+            os.path.join(save_fig_path, file_name + ".gif"),
+            writer="imagemagick",
+            fps=fps,
+            dpi=dpi,
+        )

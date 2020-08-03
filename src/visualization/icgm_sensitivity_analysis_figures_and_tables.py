@@ -189,7 +189,9 @@ def _validate_bg(bg_array: "np.ndarray[np.float64]"):
         )
         # raise Exception("Some values in the passed in array had glucose values greater than 1000.")
 
+
 ########### New Code ##################
+
 
 def get_data(filename, simulation_df):
     bg_test_condition = filename.split(".")[1].replace("bg", "")
@@ -199,6 +201,7 @@ def get_data(filename, simulation_df):
     DKAI = dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
     DKAI_RS = dka_risk_score(DKAI)
     return [bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
+
 
 # %% Visualization Functions
 # %% FUNCTIONS
@@ -222,7 +225,6 @@ def get_metadata_tables(demographic_df):
     ].median()
     # get replace age and years living with (ylw) < 0 with np.nan
     demographic_reduced_df[demographic_reduced_df < 0] = np.nan
-
 
     # %% Age Breakdown Table
     # TODO: this can be generalized for any time we want to get counts by bins
@@ -537,12 +539,12 @@ def make_boxplot(
 
         summary_fig = px.box(
             y=table_df[metric].apply(lambda x: x + 1),
-            points = False,
-            color=table_df[level_of_analysis+"_label"],
+            points=False,
+            color=table_df[level_of_analysis + "_label"],
             color_discrete_sequence=px.colors.qualitative.T10,
             # can also explicitly define the sequence: ["red", "green", "blue"],
             notched=notched_boxplot,
-            facet_col=table_df[level_of_analysis+"_label"],
+            facet_col=table_df[level_of_analysis + "_label"],
             boxmode="overlay",
             log_y=True,
         )
@@ -555,18 +557,17 @@ def make_boxplot(
         + " By "
         + level_of_analysis_dict[level_of_analysis],
         showlegend=True,
-        #xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
+        # xaxis=dict(title=level_of_analysis_dict[level_of_analysis]),
         yaxis=dict(title=metric),
         plot_bgcolor="#D3D3D3",
         legend_title=level_of_analysis_dict[level_of_analysis],
     )
 
-
     summary_fig.update_yaxes(
         type=y_scale_type,
-        #range=[0, ],
+        # range=[0, ],
         tickvals=[1, 2, 3, 6, 11, 26, 51, 101, 251, 501],
-        ticktext=["0", "1", "2", "5", "10", "25", "50", "100","250","500"],
+        ticktext=["0", "1", "2", "5", "10", "25", "50", "100", "250", "500"],
     )
 
     summary_fig.update_traces(marker=dict(size=2, opacity=0.3))
@@ -612,23 +613,24 @@ def make_bubble_plot(
             grouped_df["count"] / grouped_df["count"].sum()
         ).apply(lambda x: "{:.1%}".format(x))
 
-
-        #For adding in rows that don't exist
-        metric_values =[0,1,2,3,4]
+        # For adding in rows that don't exist
+        metric_values = [0, 1, 2, 3, 4]
         for metric_value in metric_values:
             if not ((grouped_df[metric] == metric_value)).any():
                 data = [[metric_value, score_dict[metric_value], 0.001, ""]]
-                df2 = pd.DataFrame(data, columns=[metric, metric + " String", "count", "percentage"])
+                df2 = pd.DataFrame(
+                    data, columns=[metric, metric + " String", "count", "percentage"]
+                )
                 grouped_df = pd.concat([grouped_df, df2], axis=0, ignore_index=True)
 
         grouped_df = grouped_df.sort_values(by=[metric], ascending=True)
 
         summary_fig = px.scatter(
-            x=[1]*len(grouped_df[metric]),
+            x=[1] * len(grouped_df[metric]),
             y=grouped_df[metric],
             size=grouped_df["count"],
             color=grouped_df[metric + " String"],
-            #text=grouped_df["percentage"],
+            # text=grouped_df["percentage"],
             color_discrete_map=color_dict,
             size_max=25,
         )
@@ -637,12 +639,13 @@ def make_bubble_plot(
             if row["count"] >= 1:
                 summary_fig.add_annotation(
                     x=1,
-                    y=row[metric] + .15 + float(row["percentage"].replace("%", "")) * .0015,
+                    y=row[metric]
+                    + 0.15
+                    + float(row["percentage"].replace("%", "")) * 0.0015,
                     text=row["percentage"],
-                    font=dict(
-                        size=12
-                    ),
-                    showarrow=False)
+                    font=dict(size=12),
+                    showarrow=False,
+                )
 
         layout = go.Layout(
             showlegend=True,
@@ -651,7 +654,9 @@ def make_bubble_plot(
             + " Across "
             + level_of_analysis_dict[level_of_analysis],
             yaxis=dict(title=metric, tickvals=[0, 1, 2, 3, 4], range=[-0.25, 4.4]),
-            xaxis=dict(title="",tickvals=[0,1,2],range=[0,2],showticklabels=False),
+            xaxis=dict(
+                title="", tickvals=[0, 1, 2], range=[0, 2], showticklabels=False
+            ),
             plot_bgcolor="#D3D3D3",
             legend_title="Tidepool " + metric + "<br>",
             legend={"traceorder": "reversed"},
@@ -659,37 +664,76 @@ def make_bubble_plot(
 
     else:
 
-
-        df = table_df[[level_of_analysis, level_of_analysis+"_label", metric, metric + " String"]]
+        df = table_df[
+            [
+                level_of_analysis,
+                level_of_analysis + "_label",
+                metric,
+                metric + " String",
+            ]
+        ]
         grouped_df = (
-            df.groupby([level_of_analysis, level_of_analysis+"_label", metric, metric + " String"])
+            df.groupby(
+                [
+                    level_of_analysis,
+                    level_of_analysis + "_label",
+                    metric,
+                    metric + " String",
+                ]
+            )
             .size()
             .reset_index(name="count")
-            .sort_values(by=[level_of_analysis, level_of_analysis+"_label", metric], ascending=True)
+            .sort_values(
+                by=[level_of_analysis, level_of_analysis + "_label", metric],
+                ascending=True,
+            )
         )
 
-        sum_df = grouped_df.groupby(analysis_level)['count'].transform('sum')
-        grouped_df['percentage'] = grouped_df['count'].div(sum_df).apply(lambda x: "{:.1%}".format(x))
-        grouped_df['percentage'] = grouped_df['percentage'].apply(lambda x: x[:len(x)-3]+"%" if x[len(x)-3:]==".0%" else x)
+        sum_df = grouped_df.groupby(analysis_level)["count"].transform("sum")
+        grouped_df["percentage"] = (
+            grouped_df["count"].div(sum_df).apply(lambda x: "{:.1%}".format(x))
+        )
+        grouped_df["percentage"] = grouped_df["percentage"].apply(
+            lambda x: x[: len(x) - 3] + "%" if x[len(x) - 3 :] == ".0%" else x
+        )
 
+        # For adding in rows that don't exist
 
-        #For adding in rows that don't exist
-
-        metric_values, analysis_levels, analysis_labels = [0, 1, 2, 3, 4], grouped_df[level_of_analysis].unique(), grouped_df[level_of_analysis+"_label"].unique()
+        metric_values, analysis_levels, analysis_labels = (
+            [0, 1, 2, 3, 4],
+            grouped_df[level_of_analysis].unique(),
+            grouped_df[level_of_analysis + "_label"].unique(),
+        )
 
         for metric_value, level in itertools.product(metric_values, analysis_levels):
-            if not ((grouped_df[metric] == metric_value) & (grouped_df[analysis_level] == level)).any():
+            if not (
+                (grouped_df[metric] == metric_value)
+                & (grouped_df[analysis_level] == level)
+            ).any():
                 data = [[level, metric_value, score_dict[metric_value], 0.001, ""]]
-                df2 = pd.DataFrame(data, columns=[level_of_analysis, metric, metric + " String", "count", "percentage"])
-                df2[level_of_analysis+"_label"] = df2[level_of_analysis].replace(analysis_type_labels)
+                df2 = pd.DataFrame(
+                    data,
+                    columns=[
+                        level_of_analysis,
+                        metric,
+                        metric + " String",
+                        "count",
+                        "percentage",
+                    ],
+                )
+                df2[level_of_analysis + "_label"] = df2[level_of_analysis].replace(
+                    analysis_type_labels
+                )
                 grouped_df = pd.concat([grouped_df, df2], axis=0, ignore_index=True)
 
-        grouped_df = grouped_df.sort_values(by=[level_of_analysis, level_of_analysis + "_label", metric], ascending=True)
+        grouped_df = grouped_df.sort_values(
+            by=[level_of_analysis, level_of_analysis + "_label", metric], ascending=True
+        )
 
         summary_fig = px.scatter(
-            x=grouped_df[level_of_analysis+"_label"],
+            x=grouped_df[level_of_analysis + "_label"],
             y=grouped_df[metric],
-            #text=grouped_df["percentage"],
+            # text=grouped_df["percentage"],
             size=grouped_df["count"],
             color=grouped_df[metric + " String"],
             color_discrete_map=color_dict,
@@ -699,22 +743,23 @@ def make_bubble_plot(
         )
 
         if analysis_level == "bg_test_condition":
-            annotation_font_size=9
-            height_parameter=.1
+            annotation_font_size = 9
+            height_parameter = 0.1
         else:
             annotation_font_size = 12
-            height_parameter=.15
+            height_parameter = 0.15
 
         for index, row in grouped_df.iterrows():
             if row["count"] >= 1:
                 summary_fig.add_annotation(
-                    x=row[level_of_analysis+"_label"],
-                    y=row[metric] + height_parameter + float(row["percentage"].replace("%", "")) * .0015,
+                    x=row[level_of_analysis + "_label"],
+                    y=row[metric]
+                    + height_parameter
+                    + float(row["percentage"].replace("%", "")) * 0.0015,
                     text=row["percentage"],
-                    font=dict(
-                        size=annotation_font_size
-                    ),
-                    showarrow=False)
+                    font=dict(size=annotation_font_size),
+                    showarrow=False,
+                )
 
         if level_of_analysis == "analysis_type":
             tickangle = 45
@@ -869,21 +914,29 @@ def make_distribution_table(
         distribution_df.columns = distribution_df.columns.droplevel(0)
 
     if level_of_analysis == "bg_test_condition":
-        distribution_df.iloc[:, 0] = distribution_df.iloc[:, 0].apply(lambda x: "BG Test Condition {}".format(x))
-        #ret = distribution_df.index.map(lambda x: "BG Test Condition {}".format(x))
-        #distribution_df.insert(1, "", ret, True)
-        #distribution_df.columns = distribution_df.columns.droplevel(0)
+        distribution_df.iloc[:, 0] = distribution_df.iloc[:, 0].apply(
+            lambda x: "BG Test Condition {}".format(x)
+        )
+        # ret = distribution_df.index.map(lambda x: "BG Test Condition {}".format(x))
+        # distribution_df.insert(1, "", ret, True)
+        # distribution_df.columns = distribution_df.columns.droplevel(0)
 
     distribution_df = distribution_df.round(2)
 
-    distribution_df = distribution_df.rename(columns={'mean': 'Mean',
-                                                      '50%':'Median',
-                                                      'std':"Standard Deviation",
-                                                      'min':'Minimum',
-                                                      'max':'Maximum',
-                                                      'count':'Number of Simulations'})
+    distribution_df = distribution_df.rename(
+        columns={
+            "mean": "Mean",
+            "50%": "Median",
+            "std": "Standard Deviation",
+            "min": "Minimum",
+            "max": "Maximum",
+            "count": "Number of Simulations",
+        }
+    )
 
-    distribution_df = distribution_df.replace("correction_bolus","Correction Bolus Analyses")
+    distribution_df = distribution_df.replace(
+        "correction_bolus", "Correction Bolus Analyses"
+    )
     distribution_df = distribution_df.replace("meal_bolus", "Meal Bolus Analyses")
     distribution_df = distribution_df.replace("temp_basal_only", "Temp Basal Analyses")
 
@@ -902,6 +955,7 @@ def make_distribution_table(
     )
     return
 
+
 # %% Summary Table
 def prepare_results_for_summary_table(results_df):
 
@@ -911,7 +965,9 @@ def prepare_results_for_summary_table(results_df):
     summary_df_reduced = results_df.copy()
 
     # first do all analyses
-    all_analyses_summary_df = get_summary_stats(summary_df_reduced, "All Analyses Combined")
+    all_analyses_summary_df = get_summary_stats(
+        summary_df_reduced, "All Analyses Combined"
+    )
 
     # break up by analysis type
     # rename the analysis types
@@ -922,7 +978,9 @@ def prepare_results_for_summary_table(results_df):
     summary_df_reduced.replace({"meal_bolus": "Meal Bolus Analysis"}, inplace=True)
 
     for analysis_type in summary_df_reduced["analysis_type"].unique():
-        temp_df = summary_df_reduced[summary_df_reduced["analysis_type"] == analysis_type]
+        temp_df = summary_df_reduced[
+            summary_df_reduced["analysis_type"] == analysis_type
+        ]
         temp_summary = get_summary_stats(temp_df, analysis_type)
         all_analyses_summary_df = pd.concat([all_analyses_summary_df, temp_summary])
 
@@ -943,20 +1001,23 @@ def prepare_results_for_summary_table(results_df):
 
 def get_summary_stats(df, level_of_analysis_name):
 
-    #Commented out risk score columsn pending whether want to show
-    #median values for the categorical risk score measures
+    # Commented out risk score columsn pending whether want to show
+    # median values for the categorical risk score measures
 
     # create a summary table
     # NOTE: there is a known bug with plotly tables https://github.com/plotly/plotly.js/issues/3251
     outcome_table_cols = [
         "Median LBGI<br>" "     (IQR)",  # adding in spacing because of bug
-        #"Median LBGI Risk Score<br>"
-        #"             (IQR)",  # adding in spacing because of bug
+        # "Median LBGI Risk Score<br>"
+        # "             (IQR)",  # adding in spacing because of bug
         "Median DKAI<br>" "     (IQR)",  # adding in spacing because of bug
-        #"Median DKAI Risk Score<br>"
-        #"             (IQR)",  # adding in spacing because of bug
+        # "Median DKAI Risk Score<br>"
+        # "             (IQR)",  # adding in spacing because of bug
     ]
-    outcome_names = ["LBGI", "DKAI"]#["LBGI", "LBGI Risk Score", "DKAI", "DKAI Risk Score"]
+    outcome_names = [
+        "LBGI",
+        "DKAI",
+    ]  # ["LBGI", "LBGI Risk Score", "DKAI", "DKAI Risk Score"]
     count_name = " Number of<br>Simulations"
     summary_table_cols = [count_name] + outcome_table_cols
     summary_table = pd.DataFrame(columns=summary_table_cols)
@@ -994,18 +1055,24 @@ def make_frequency_table(
     }
 
     if level_of_analysis == "all":
-        results_df_reduced=results_df[[metric+ " String"]]
+        results_df_reduced = results_df[[metric + " String"]]
         frequency_df = results_df_reduced[metric + " String"].value_counts().to_frame()
         frequency_df = frequency_df.T
         column_names = list(color_dict.keys())
     else:
-        frequency_df = pd.crosstab(results_df[level_of_analysis], results_df[metric+" String"]).reset_index()
-        frequency_df = frequency_df.rename(columns={level_of_analysis:level_of_analysis_dict[level_of_analysis]})
-        column_names = [level_of_analysis_dict[level_of_analysis]]+list(color_dict.keys())
+        frequency_df = pd.crosstab(
+            results_df[level_of_analysis], results_df[metric + " String"]
+        ).reset_index()
+        frequency_df = frequency_df.rename(
+            columns={level_of_analysis: level_of_analysis_dict[level_of_analysis]}
+        )
+        column_names = [level_of_analysis_dict[level_of_analysis]] + list(
+            color_dict.keys()
+        )
 
-    #frequency_df = frequency_df.round(2)
+    # frequency_df = frequency_df.round(2)
 
-    frequency_df = frequency_df.replace("correction_bolus","Correction Bolus Analyses")
+    frequency_df = frequency_df.replace("correction_bolus", "Correction Bolus Analyses")
     frequency_df = frequency_df.replace("meal_bolus", "Meal Bolus Analyses")
     frequency_df = frequency_df.replace("temp_basal_only", "Temp Basal Analyses")
 
@@ -1030,6 +1097,7 @@ def make_frequency_table(
     )
     return
 
+
 #### LOAD IN DATA #####
 
 data = []
@@ -1041,13 +1109,12 @@ file_list = [
     filename for filename in compressed_filestream.getnames() if ".csv" in filename
 ]
 
-for filename in file_list[0:100]: #Change this when finish the figures
+for filename in file_list:  # [0:100]: #Change this when finish the figures
     print(filename)
     simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
 
     # Add in the data
     data.append(get_data(filename, simulation_df))
-
 
 columns = [
     "bg_test_condition",
@@ -1082,13 +1149,18 @@ color_dict = {
     "4 - Critical": "#9A3A39",
 }
 
-analysis_type_labels = {"correction_bolus": "Correction Bolus",
-                        "meal_bolus": "Meal Bolus",
-                        "temp_basal_only": "Temp Basal Only"
-                        }
+analysis_type_labels = {
+    "correction_bolus": "Correction Bolus",
+    "meal_bolus": "Meal Bolus",
+    "temp_basal_only": "Temp Basal Only",
+}
 
-results_df["analysis_type_label"] = results_df["analysis_type"].replace(analysis_type_labels)
-results_df["bg_test_condition_label"] = results_df["bg_test_condition"].replace(analysis_type_labels)
+results_df["analysis_type_label"] = results_df["analysis_type"].replace(
+    analysis_type_labels
+)
+results_df["bg_test_condition_label"] = results_df["bg_test_condition"].replace(
+    analysis_type_labels
+)
 results_df["DKAI Risk Score String"] = results_df["DKAI Risk Score"].replace(score_dict)
 results_df["LBGI Risk Score String"] = results_df["LBGI Risk Score"].replace(score_dict)
 
@@ -1122,7 +1194,7 @@ for analysis_level, metric, axis_scale in itertools.product(
         save_fig=True,  # This is not working, need to figure out why
     )
 
-    '''
+    """
     make_histogram(
         results_df,
         figure_name="histogram-" + analysis_level + "-" + metric,
@@ -1135,7 +1207,7 @@ for analysis_level, metric, axis_scale in itertools.product(
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
 
-    '''
+    """
     make_distribution_table(
         results_df,
         table_name="distribution-table-" + analysis_level + "-" + metric,
@@ -1185,7 +1257,7 @@ make_table(
 
 ########### DEMOGRAPHICS TABLE #################
 
-#TODO: Replace with actual data after get that
+# TODO: Replace with actual data after get that
 sim_results_location = os.path.join("..", "..", "data", "processed")
 simulation_file = "risk-sim-results-2020-04-13"
 file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
@@ -1197,46 +1269,49 @@ get_metadata_tables(demographic_df)
 
 ########## CDF Plots #################
 
+
 def ecdf(x):
     x = np.sort(x)
+
     def result(v):
-        return np.searchsorted(x, v, side='right') / x.size
+        return np.searchsorted(x, v, side="right") / x.size
+
     return result
 
-def create_cdf(data,
+
+def create_cdf(
+    data,
     title="CDF",
     image_type="png",
     figure_name="<number-or-name>-boxplot",
     analysis_name="analysis-<name>",
     view_fig=True,
     save_fig=True,
-    save_fig_path=os.path.join("..", "..", "reports", "figures")):
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
 
     fig = go.Figure()
     fig.add_scatter(x=np.unique(data), y=ecdf(data)(np.unique(data)))
     fig.update_layout(title=title)
 
     save_view_fig(
-        fig,
-        image_type,
-        figure_name,
-        analysis_name,
-        view_fig,
-        save_fig,
-        save_fig_path,
+        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
     )
+
 
 metrics = ["LBGI", "DKAI", "LBGI Risk Score", "DKAI Risk Score"]
 
 for metric in metrics:
-    create_cdf(data=results_df[metric],
-        title="CDF for "+metric,
+    create_cdf(
+        data=results_df[metric],
+        title="CDF for " + metric,
         image_type="png",
         figure_name="cdf-" + metric,
         analysis_name="icgm-sensitivity-analysis",
         view_fig=False,
         save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"))
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    )
 
 
 ########## Proportion/Frequency Tables #################
@@ -1245,14 +1320,15 @@ metrics = ["LBGI Risk Score", "DKAI Risk Score"]
 analysis_levels = ["bg_test_condition", "analysis_type", "all"]
 
 for analysis_level, metric in itertools.product(analysis_levels, metrics):
-    make_frequency_table(results_df,
+    make_frequency_table(
+        results_df,
         image_type="png",
-        table_name="frequency-table-"+metric+"-"+analysis_level,
-
+        table_name="frequency-table-" + metric + "-" + analysis_level,
         analysis_name="icgm-sensitivity-analysis",
         metric=metric,
         level_of_analysis=analysis_level,
         view_fig=True,
         save_fig=True,
         save_csv=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"))
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    )

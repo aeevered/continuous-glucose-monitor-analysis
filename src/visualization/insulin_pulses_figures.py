@@ -125,6 +125,7 @@ def create_scatterplot_v1(
 
     return
 
+
 def create_scatterplot_v2(
     summary_metrics_df=summary_metrics_df,
     color_dict=color_dict,
