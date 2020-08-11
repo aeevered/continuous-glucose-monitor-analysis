@@ -1097,6 +1097,36 @@ def make_frequency_table(
     )
     return
 
+#Functions of cdfs
+
+def ecdf(x):
+    x = np.sort(x)
+
+    def result(v):
+        return np.searchsorted(x, v, side="right") / x.size
+
+    return result
+
+
+def create_cdf(
+    data,
+    title="CDF",
+    image_type="png",
+    figure_name="<number-or-name>-boxplot",
+    analysis_name="analysis-<name>",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+
+    fig = go.Figure()
+    fig.add_scatter(x=np.unique(data), y=ecdf(data)(np.unique(data)))
+    fig.update_layout(title=title)
+
+    save_view_fig(
+        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
+    )
+    return
 
 #### LOAD IN DATA #####
 
@@ -1257,7 +1287,6 @@ make_table(
 
 ########### DEMOGRAPHICS TABLE #################
 
-# TODO: Replace with actual data after get that
 sim_results_location = os.path.join("..", "..", "data", "processed")
 simulation_file = "risk-sim-results-2020-04-13"
 file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
@@ -1268,35 +1297,6 @@ get_metadata_tables(demographic_df)
 
 
 ########## CDF Plots #################
-
-
-def ecdf(x):
-    x = np.sort(x)
-
-    def result(v):
-        return np.searchsorted(x, v, side="right") / x.size
-
-    return result
-
-
-def create_cdf(
-    data,
-    title="CDF",
-    image_type="png",
-    figure_name="<number-or-name>-boxplot",
-    analysis_name="analysis-<name>",
-    view_fig=True,
-    save_fig=True,
-    save_fig_path=os.path.join("..", "..", "reports", "figures"),
-):
-
-    fig = go.Figure()
-    fig.add_scatter(x=np.unique(data), y=ecdf(data)(np.unique(data)))
-    fig.update_layout(title=title)
-
-    save_view_fig(
-        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
-    )
 
 
 metrics = ["LBGI", "DKAI", "LBGI Risk Score", "DKAI Risk Score"]

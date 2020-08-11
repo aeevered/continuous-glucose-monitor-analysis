@@ -12,9 +12,6 @@ from risk_scenario_figures_shared_functions import (
 
 # reference: https://chart-studio.plotly.com/~empet/15243/animating-traces-in-subplotsbr/#/
 
-# TODO: add in subplot titles
-
-
 def add_plot(fig, df, field, row):
     features_dictionary = get_features_dictionary(field)
 
@@ -146,10 +143,10 @@ def create_simulation_figure_plotly(
         dict(
             xref="paper",
             yref="paper",
-            x=1.2,
-            y=.5,
+            x=1.08,
+            y=.1,
             showarrow=False,
-            text="Optional Additional Annotations",
+            text="SBR = 0.3",
         ),
     )
 
