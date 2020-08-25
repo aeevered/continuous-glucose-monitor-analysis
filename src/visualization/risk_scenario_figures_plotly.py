@@ -9,7 +9,6 @@ from risk_scenario_figures_shared_functions import (
     get_features_dictionary,
 )
 
-
 # reference: https://chart-studio.plotly.com/~empet/15243/animating-traces-in-subplotsbr/#/
 
 def add_plot(fig, df, field, row):
@@ -49,9 +48,7 @@ def add_plot(fig, df, field, row):
     return fig
 
 
-def set_layout(
-    traces, num_subplots, fig, data_frames, time_range=(0, 8)
-):
+def set_layout(traces, num_subplots, fig, data_frames, time_range=(0, 8)):
     # fig.update_layout(width=700, height=475)
     fig.update_xaxes(range=[time_range[0], time_range[1]], title="Hours")
 
@@ -113,11 +110,10 @@ def create_simulation_figure_plotly(
         data_frames.append(df)
 
     # Set up figure and axes
-    print(subplot_titles)
     fig = make_subplots(rows=subplots, cols=1, subplot_titles=np.array(subplot_titles))
 
-    for i in fig['layout']['annotations']:
-        i['font'] = dict(size=14)
+    for i in fig["layout"]["annotations"]:
+        i["font"] = dict(size=14)
 
     fig = set_layout(traces, subplots, fig, data_frames, time_range)
 
@@ -137,14 +133,14 @@ def create_simulation_figure_plotly(
             y=-0.27,
             showarrow=False,
             text="This is a caption for the Plotly figure. It could be a description of the "
-                 "risk scenario or the particular details of the scenario.",
-            font=dict(size=13)
+            "risk scenario or the particular details of the scenario.",
+            font=dict(size=13),
         ),
         dict(
             xref="paper",
             yref="paper",
             x=1.08,
-            y=.1,
+            y=0.1,
             showarrow=False,
             text="SBR = 0.3",
         ),
@@ -268,9 +264,7 @@ def create_simulation_figure_plotly(
             margin_t=90,
             updatemenus=updatemenus,
             sliders=sliders,
-            font=dict(
-                size=10
-            )
+            font=dict(size=10),
         )
 
     else:
@@ -279,9 +273,7 @@ def create_simulation_figure_plotly(
             title_font_size=16,
             margin_b=150,
             margin_t=90,
-            font=dict(
-                size=10
-            )
+            font=dict(size=10),
         )
 
     save_view_fig(
@@ -312,11 +304,7 @@ create_simulation_figure_plotly(
     subplots=3,
     time_range=(0, 8),
     main_title="Risk Scenario",
-    subplot_titles = [
-                     "BG Values",
-                     "Insulin On-Board",
-                     "Scheduled Basal Rate",
-                 ],
+    subplot_titles=["BG Values", "Insulin On-Board", "Scheduled Basal Rate",],
     save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),
     figure_name="plotly_simulation_figure",
     analysis_name="risk_scenarios",
@@ -335,6 +323,28 @@ create_simulation_figure_plotly(
     subplot_titles=[
         "BG Values",
         "Insulin On-Board",
+        "Scheduled Basal Rate and Loop Decisions",
+    ],
+    save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),
+    figure_name="plotly_simulation_figure",
+    analysis_name="risk_scenarios",
+    animate=True,
+)
+
+
+traces = [{0: ["bg", "bg_sensor"], 1: ["sbr"]}, {2:["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]}]
+
+create_simulation_figure_plotly(
+    file_location=file_location,
+    file_names=[no_loop_filename, loop_filename],
+    traces=traces,
+    subplots=4,
+    time_range=(0, 8),
+    main_title="Risk Scenario",
+    subplot_titles=[
+        "BG Values (No Loop)",
+        "Scheduled Basal Rate (No Loop)",
+        "BG Values (With Loop)",
         "Scheduled Basal Rate and Loop Decisions",
     ],
     save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),

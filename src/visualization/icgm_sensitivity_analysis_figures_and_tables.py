@@ -460,7 +460,7 @@ def make_table(
             values=table_df[table_cols].T,
             fill_color="white",
             align="center",
-            font_size=12,
+            font_size=13,
             height=cell_height[0],
         ),
     )
@@ -474,6 +474,22 @@ def make_table(
         margin=dict(l=10, r=10, t=10, b=0), width=table_width, height=table_height
     )
     fig = go.Figure(data=_table, layout=table_layout)
+
+    #print(table_height, table_width)
+
+    save_view_fig(
+        fig,
+        image_type=image_type,
+        figure_name=table_name,
+        analysis_name=analysis_name,
+        view_fig=view_fig,
+        save_fig=save_fig,
+        save_fig_path=save_fig_path,
+        width=table_width,
+        height=table_height
+    )
+
+    '''
     if view_fig:
         plot(fig)
 
@@ -486,6 +502,11 @@ def make_table(
             file=os.path.join(save_fig_path, file_name + ".{}".format(image_type)),
             format=image_type,
         )
+    '''
+    file_name = "{}-{}_{}_{}".format(
+        analysis_name, table_name, utc_string, code_version
+    )
+
     if save_csv:
         table_df.to_csv(os.path.join(save_fig_path, file_name + ".csv"))
 
@@ -905,7 +926,7 @@ def make_distribution_table(
     if level_of_analysis == "all":
         df = table_df[[metric]]
         distribution_df = df[metric].describe().to_frame().transpose()
-        distribution_df.insert(0, "", ["All Analyses"], True)
+        distribution_df.insert(0, "", ["All Analyses Combined"], True)
     else:
         df = table_df[[level_of_analysis, metric]]
         distribution_df = (
@@ -946,8 +967,8 @@ def make_distribution_table(
         table_name=table_name,
         analysis_name=analysis_name,
         cell_height=[30],
-        cell_width=[200, 250, 100, 200, 100, 100, 100, 100],
-        cell_header_height=[30],
+        cell_width=[240, 130, 100, 100, 100, 100, 100, 100],
+        cell_header_height=[60],
         view_fig=view_fig,
         save_fig=save_fig,
         save_csv=save_csv,
@@ -1041,6 +1062,9 @@ def make_frequency_table(
     image_type="png",
     table_name="<number-or-name>-frequency-table",
     analysis_name="analysis-<name>",
+    cell_header_height=[60],
+    cell_height=[30],
+    cell_width=[200, 100, 150, 150],
     metric="LBGI",
     level_of_analysis="analysis_type",
     view_fig=True,
@@ -1049,25 +1073,48 @@ def make_frequency_table(
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
     level_of_analysis_dict = {
-        "all": "All Analyses",
+        "all": "All Analyses Combined",
         "analysis_type": "Analysis Type",
         "bg_test_condition": "BG Test Condition",
     }
+
 
     if level_of_analysis == "all":
         results_df_reduced = results_df[[metric + " String"]]
         frequency_df = results_df_reduced[metric + " String"].value_counts().to_frame()
         frequency_df = frequency_df.T
-        column_names = list(color_dict.keys())
+
+        #TODO: update this; not pythonic way to do
+        percentage_df = frequency_df.apply(lambda x: x / x.sum(), axis=1)
+        for row in range(len(frequency_df)):
+            for col in range(len(frequency_df.columns)):
+                frequency_df.iloc[row, col] = str(frequency_df.iloc[row, col]) + " (" + str('{:.1%}'.format(percentage_df.iloc[row, col])) + ")"
+        column_names = [""]+list(color_dict.keys())
+
+        frequency_df.insert(0, "", ["All Analyses Combined"], True)
     else:
         frequency_df = pd.crosstab(
             results_df[level_of_analysis], results_df[metric + " String"]
         ).reset_index()
+
+        #TODO: update this; not pythonic way to do
+        percentage_df = frequency_df.loc[:, frequency_df.columns != level_of_analysis].apply(lambda x: x / x.sum(), axis=1)
+        for row in range(len(frequency_df)):
+            for col in range(len(frequency_df.columns)-1):
+                frequency_df.iloc[row, col+1] = str(frequency_df.iloc[row, col+1]) + " (" + str('{:.1%}'.format(percentage_df.iloc[row, col])) + ")"
+
+
         frequency_df = frequency_df.rename(
             columns={level_of_analysis: level_of_analysis_dict[level_of_analysis]}
         )
         column_names = [level_of_analysis_dict[level_of_analysis]] + list(
             color_dict.keys()
+        )
+
+
+    if level_of_analysis == "bg_test_condition":
+        frequency_df.iloc[:, 0] = frequency_df.iloc[:, 0].apply(
+            lambda x: "BG Test Condition {}".format(x)
         )
 
     # frequency_df = frequency_df.round(2)
@@ -1078,18 +1125,25 @@ def make_frequency_table(
 
     for metric_value in score_dict.keys():
         if score_dict[metric_value] not in frequency_df.columns:
-            frequency_df[score_dict[metric_value]] = 0
+            frequency_df[score_dict[metric_value]] = "0 (0.0%)"
 
     frequency_df = frequency_df.reindex(columns=column_names)
+
+    frequency_df = frequency_df.rename(
+        columns={
+            "Analysis Type": "",
+            "BG Test Condition": ""
+        }
+    )
 
     make_table(
         frequency_df,
         image_type=image_type,
         table_name=table_name,
         analysis_name=analysis_name,
-        cell_height=[30],
-        cell_width=[200, 120, 120, 120, 120, 120, 120, 120],
-        cell_header_height=[30],
+        cell_height=cell_height,
+        cell_width=cell_width,
+        cell_header_height=cell_header_height,
         view_fig=view_fig,
         save_fig=save_fig,
         save_csv=save_csv,
@@ -1097,7 +1151,9 @@ def make_frequency_table(
     )
     return
 
-#Functions of cdfs
+
+# Functions of cdfs
+
 
 def ecdf(x):
     x = np.sort(x)
@@ -1128,6 +1184,7 @@ def create_cdf(
     )
     return
 
+
 #### LOAD IN DATA #####
 
 data = []
@@ -1139,7 +1196,7 @@ file_list = [
     filename for filename in compressed_filestream.getnames() if ".csv" in filename
 ]
 
-for filename in file_list:  # [0:100]: #Change this when finish the figures
+for filename in file_list: #[0:100]: #Change this when finish the figures
     print(filename)
     simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
 
@@ -1278,9 +1335,9 @@ make_table(
     analysis_name="icgm-sensitivity-analysis",
     cell_header_height=[60],
     cell_height=[30],
-    cell_width=[200, 100, 150, 200, 150, 200],
+    cell_width=[200, 150, 150, 150],
     image_type="png",
-    view_fig=True,
+    view_fig=False,
     save_fig=True,
 )
 
@@ -1325,9 +1382,12 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         image_type="png",
         table_name="frequency-table-" + metric + "-" + analysis_level,
         analysis_name="icgm-sensitivity-analysis",
+        cell_header_height=[30],
+        cell_height=[30],
+        cell_width=[250, 130, 135, 120, 120, 120],
         metric=metric,
         level_of_analysis=analysis_level,
-        view_fig=True,
+        view_fig=False,
         save_fig=True,
         save_csv=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),

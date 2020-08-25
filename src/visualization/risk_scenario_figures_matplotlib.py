@@ -440,7 +440,7 @@ create_simulation_figure(
 )
 
 # EXAMPLE FROM USER INPUT
-# generate_figure_from_user_input()
+generate_figure_from_user_input()
 
 # risk_scenarios_PyLoopkit v0.1.csv
 
