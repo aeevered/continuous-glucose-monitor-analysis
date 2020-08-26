@@ -80,7 +80,7 @@ def set_layout(traces, num_subplots, fig, data_frames, time_range=(0, 8)):
         else:
             fig.update_yaxes(
                 range=[0, max_value + 0.5],
-                title="Insulin (U or U/hr)",
+                title="Insulin (U/hr)",
                 row=subplot + 1,
                 col=1,
             )
@@ -99,6 +99,7 @@ def create_simulation_figure_plotly(
     main_title="Risk Scenario Simulation",
     subplot_titles=[],
     save_fig_path="",
+    subtitle="",
     figure_name="simulation_figure",
     analysis_name="risk-scenarios",
     animate=True,
@@ -141,10 +142,11 @@ def create_simulation_figure_plotly(
         dict(
             xref="paper",
             yref="paper",
-            x=1.08,
-            y=0.1,
+            x=0,
+            y=1.05,
             showarrow=False,
-            text="",
+            text=subtitle,
+            font=dict(size=12),
         ),
     )
 
@@ -269,6 +271,9 @@ def create_simulation_figure_plotly(
             font=dict(size=10),
         )
 
+        #This controls the speed
+        fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 200
+
     else:
         fig.update_layout(
             title_text=main_title,
@@ -307,6 +312,7 @@ create_simulation_figure_plotly(
     subplots=3,
     time_range=(0, 8),
     main_title="Risk Scenario",
+    subtitle="",
     subplot_titles=["BG Values", "Insulin On-Board", "Scheduled Basal Rate",],
     save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),
     figure_name="plotly_simulation_figure",
@@ -323,6 +329,7 @@ create_simulation_figure_plotly(
     traces=traces,
     subplots=3,
     time_range=(0, 8),
+    subtitle="",
     main_title="Risk Scenario",
     subplot_titles=[
         "BG Values",
@@ -345,6 +352,7 @@ create_simulation_figure_plotly(
     traces=traces,
     subplots=4,
     time_range=(0, 8),
+    subtitle="",
     main_title="Risk Scenario",
     subplot_titles=[
         "BG Values (No Loop)",

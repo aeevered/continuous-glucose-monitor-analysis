@@ -20,7 +20,7 @@ def data_loading_and_preparation(filepath):
 def get_features_dictionary(field):
     if field == "bg":
         features_dictionary = dict(
-            legend_label="True BG",
+            legend_label="rTBG Trace (True BG)",
             color="#B1BEFF",
             alpha=1.0,
             linestyle="None",
@@ -29,13 +29,13 @@ def get_features_dictionary(field):
             markersize=3,
             drawstyle="default",
             mode="markers",
-            dash="dash",
+            dash=None,
             fill=None,
             shape="linear",
         )
     elif field == "bg_sensor":
         features_dictionary = dict(
-            legend_label="Sensor EGV",
+            legend_label=" iCGM",
             color="#6AA84F",
             alpha=1.0,
             linestyle="None",

@@ -1184,7 +1184,7 @@ def create_cdf(
     )
     return
 
-
+'''
 #### LOAD IN DATA #####
 
 data = []
@@ -1392,3 +1392,4 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         save_csv=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
+'''
