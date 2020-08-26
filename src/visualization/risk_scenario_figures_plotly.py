@@ -93,6 +93,8 @@ def create_simulation_figure_plotly(
     file_names,
     traces,
     subplots,
+    data_frames=[],
+    files_need_loaded=False,
     time_range=(0, 8),
     main_title="Risk Scenario Simulation",
     subplot_titles=[],
@@ -102,12 +104,13 @@ def create_simulation_figure_plotly(
     animate=True,
 ):
     # Load data files
-    data_frames = []
-    for file in file_names:
-        df = data_loading_and_preparation(
-            os.path.abspath(os.path.join(file_location, file))
-        )
-        data_frames.append(df)
+    if files_need_loaded:
+        data_frames=[]
+        for file in file_names:
+            df = data_loading_and_preparation(
+                os.path.abspath(os.path.join(file_location, file))
+            )
+            data_frames.append(df)
 
     # Set up figure and axes
     fig = make_subplots(rows=subplots, cols=1, subplot_titles=np.array(subplot_titles))
@@ -132,8 +135,7 @@ def create_simulation_figure_plotly(
             x=0.55,
             y=-0.27,
             showarrow=False,
-            text="This is a caption for the Plotly figure. It could be a description of the "
-            "risk scenario or the particular details of the scenario.",
+            text="This visual shows the results of running the simulation for " + str(time_range[1]) + " hours.",
             font=dict(size=13),
         ),
         dict(
@@ -142,7 +144,7 @@ def create_simulation_figure_plotly(
             x=1.08,
             y=0.1,
             showarrow=False,
-            text="SBR = 0.3",
+            text="",
         ),
     )
 
@@ -282,15 +284,15 @@ def create_simulation_figure_plotly(
         figure_name=figure_name,
         analysis_name=analysis_name,
         view_fig=True,
-        save_fig=False,
+        save_fig=True,
         save_fig_path=save_fig_path,
-        width=600,
+        width=1200,
         height=700,
     )
 
     return
 
-
+'''
 file_location = os.path.join("..", "..", "data", "processed")
 loop_filename = "risk_scenarios_PyLoopkit v0.1.csv"
 no_loop_filename = "risk_scenarios_do_nothing.csv"
@@ -298,6 +300,7 @@ no_loop_filename = "risk_scenarios_do_nothing.csv"
 traces = [{0: ["bg", "bg_sensor"], 1: ["iob"], 2: ["sbr"]}]
 
 create_simulation_figure_plotly(
+    files_need_loaded=True,
     file_location=file_location,
     file_names=[no_loop_filename],
     traces=traces,
@@ -314,6 +317,7 @@ create_simulation_figure_plotly(
 traces = [{0: ["bg", "bg_sensor"], 1: ["iob"], 2: ["sbr", "temp_basal_sbr_if_nan"]}]
 
 create_simulation_figure_plotly(
+    files_need_loaded=True,
     file_location=file_location,
     file_names=[loop_filename],
     traces=traces,
@@ -335,6 +339,7 @@ create_simulation_figure_plotly(
 traces = [{0: ["bg", "bg_sensor"], 1: ["sbr"]}, {2:["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]}]
 
 create_simulation_figure_plotly(
+    files_need_loaded=True,
     file_location=file_location,
     file_names=[no_loop_filename, loop_filename],
     traces=traces,
@@ -352,3 +357,5 @@ create_simulation_figure_plotly(
     analysis_name="risk_scenarios",
     animate=True,
 )
+
+'''
