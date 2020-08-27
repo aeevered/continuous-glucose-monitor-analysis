@@ -272,7 +272,7 @@ def create_simulation_figure_plotly(
         )
 
         #This controls the speed
-        fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 200
+        #fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 200
 
     else:
         fig.update_layout(
