@@ -11,6 +11,8 @@ import datetime as dt
 import itertools
 from save_view_fig import save_view_fig
 import tarfile
+import json
+from scipy import stats
 
 ## Functions from data-science-metrics (ultimately want to just pull in that repo)
 def approximate_steady_state_iob_from_sbr(
@@ -193,14 +195,29 @@ def _validate_bg(bg_array: "np.ndarray[np.float64]"):
 ########### New Code ##################
 
 
-def get_data(filename, simulation_df):
+def get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df):
+    virtual_patient_num = filename.split("/")[-1].split(".")[0].replace("vp","")
+    age = patient_characteristics_df["age"].iloc[0]
+    ylw = patient_characteristics_df["ylw"].iloc[0]
+    cir = simulation_df["cir"].iloc[0]
+    isf = simulation_df["isf"].iloc[0]
+    sbr = simulation_df["sbr"].iloc[0]
+
+    #Todo: fill in rest of these
+    bias_factor = 0
+    bias_drift = 0
+    noise_coefficient = sensor_characteristics_df["noise_coefficient"].iloc[0]
+    mard = 0
+    mbe = 0
+
     bg_test_condition = filename.split(".")[1].replace("bg", "")
     analysis_type = filename.split(".")[3]
     LBGI = blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
     LBGI_RS = lbgi_risk_score(LBGI)
     DKAI = dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
     DKAI_RS = dka_risk_score(DKAI)
-    return [bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
+    return [virtual_patient_num, age, ylw, cir, isf, sbr, bias_factor, bias_drift, noise_coefficient, mard,
+            mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
 
 
 # %% Visualization Functions
@@ -219,12 +236,15 @@ def bin_data(bin_breakpoints):
 
 def get_metadata_tables(demographic_df):
     # %% prepare demographic data for tables
+
     virtual_patient_group = demographic_df.groupby("virtual_patient_num")
     demographic_reduced_df = virtual_patient_group[
-        ["age", "ylw", "CIR", "ISF", "BR"]
+        ["age", "ylw", "CIR", "ISF", "SBR"]
     ].median()
+
     # get replace age and years living with (ylw) < 0 with np.nan
     demographic_reduced_df[demographic_reduced_df < 0] = np.nan
+
 
     # %% Age Breakdown Table
     # TODO: this can be generalized for any time we want to get counts by bins
@@ -392,7 +412,7 @@ def get_metadata_tables(demographic_df):
     # %% Basal Rate (BR) Table
     br_bin_breakpoints = np.append(
         np.arange(0, 1.5, 0.25),
-        np.arange(1.5, demographic_reduced_df["BR"].max() + 0.5, 0.5),
+        np.arange(1.5, demographic_reduced_df["SBR"].max() + 0.5, 0.5),
     )
     br_bins = bin_data(br_bin_breakpoints)
 
@@ -402,11 +422,11 @@ def get_metadata_tables(demographic_df):
 
     # cut the data by bin
     demographic_reduced_df["br_bin"] = np.nan
-    demographic_reduced_df["br_bin"] = pd.cut(demographic_reduced_df["BR"], br_bins)
-    br_table["Count"] = demographic_reduced_df.groupby("br_bin")["BR"].count().values
+    demographic_reduced_df["br_bin"] = pd.cut(demographic_reduced_df["SBR"], br_bins)
+    br_table["Count"] = demographic_reduced_df.groupby("br_bin")["SBR"].count().values
 
     # add in missing data
-    br_table.loc["Missing", "Count"] = demographic_reduced_df["BR"].isnull().sum()
+    br_table.loc["Missing", "Count"] = demographic_reduced_df["SBR"].isnull().sum()
 
     # make sure that counts add up correctly
     # TODO: make a test that checks that the total subjects equal the total counts in the table
@@ -1184,39 +1204,108 @@ def create_cdf(
     )
     return
 
-'''
+########## Spearman Correlation Coefficient Table #################
+def spearman_correlation_table(results_df,
+                               image_type="png",
+                               table_name="<spearman-correlation-table",
+                               analysis_name="icgm-sensitivity-analysis",
+                               cell_header_height=[60],
+                               cell_height=[30],
+                               cell_width=[250, 150, 150, 150, 150],
+                               view_fig=True,
+                               save_fig=True,
+                               save_csv=True,
+                               save_fig_path=os.path.join("..", "..", "reports", "figures"),
+                               ):
+
+    rows = ["bias_factor", "bias_drift", "noise_coefficient", "mard", "mbe"]
+    cols = ["LBGI", "LBGI Risk Score", "DKAI", "DKAI Risk Score"]
+
+    data = {}
+
+    for col in cols:
+        row_data = []
+        for row in rows:
+            rho, pval = stats.spearmanr(results_df[row], results_df[col])
+            row_data.append("("+str(round(rho, 3))+", "+str(round(pval, 3))+")")
+        data[col] = row_data
+
+    spearman_correlation_df = pd.DataFrame(data)
+    spearman_correlation_df.insert(0, "", ['Bias Factor', 'Bias Drift', 'Noise Coefficient', 'Mean Absolute Relative Difference', "Mean Bias Error"])
+
+    make_table(
+        spearman_correlation_df,
+        image_type=image_type,
+        table_name=table_name,
+        analysis_name=analysis_name,
+        cell_height=cell_height,
+        cell_width=cell_width,
+        cell_header_height=cell_header_height,
+        view_fig=view_fig,
+        save_fig=save_fig,
+        save_csv=save_csv,
+        save_fig_path=save_fig_path,
+    )
+    return
+
 #### LOAD IN DATA #####
 
 data = []
 
 path = os.path.join("..", "..", "data", "processed")
-folder_name = "icgm-sensitivity-analysis-results-ALL-RESULTS-2020-07-12.gz"
+folder_name = "icgm-sensitivity-analysis-results-2020-09-04.gz"
 compressed_filestream = tarfile.open(os.path.join(path, folder_name))
 file_list = [
     filename for filename in compressed_filestream.getnames() if ".csv" in filename
 ]
 
-for filename in file_list: #[0:100]: #Change this when finish the figures
+for filename in file_list: #[0:5]: #Change this when finish the figures
     print(filename)
     simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
 
+    #Get patient and sensor characteristics
+    filename_components = filename.split(".")
+
+    jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+".json").read())
+    patient_characteristics_df = pd.DataFrame(jsonData, index=['i',])
+
+    jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+"."+filename_components[1]+"."+filename_components[2]+".json").read())
+    sensor_characteristics_df = pd.DataFrame(jsonData, index=['i',])
+
+
+
     # Add in the data
-    data.append(get_data(filename, simulation_df))
+    data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
 
 columns = [
+    "virtual_patient_num",
+    "age",
+    "ylw",
+    "CIR",
+    "ISF",
+    "SBR",
+    "bias_factor",
+    "bias_drift",
+    "noise_coefficient",
+    "mard",
+    "mbe",
     "bg_test_condition",
     "analysis_type",
     "LBGI",
     "LBGI Risk Score",
     "DKAI",
-    "DKAI Risk Score",
+    "DKAI Risk Score"
 ]
 
+
 results_df = pd.DataFrame(data, columns=columns)
+results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
+
 
 # rename the analysis types
 results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
 results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
+
 
 
 ########## DEFINE DICTIONARIES ###################
@@ -1258,6 +1347,9 @@ level_of_analysis_dict = {
 }
 
 #### CREATE FIGURES #####
+
+#Create Spearman Correlation Coefficient Table
+spearman_correlation_table(results_df)
 
 # Iterate through each metric and analysis_level category shown below and create boxplot
 # figure with both log scale and linear scale.
@@ -1344,13 +1436,16 @@ make_table(
 
 ########### DEMOGRAPHICS TABLE #################
 
-sim_results_location = os.path.join("..", "..", "data", "processed")
-simulation_file = "risk-sim-results-2020-04-13"
-file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
-demographic_datapath = os.path.join(file_import_path + "-just-demographics-nogit.csv")
-demographic_df = pd.read_csv(demographic_datapath, index_col=[0])
+#sim_results_location = os.path.join("..", "..", "data", "processed")
+#simulation_file = "risk-sim-results-2020-04-13"
+#file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
+#demographic_datapath = os.path.join(file_import_path + "-just-demographics-nogit.csv")
+#demographic_df = pd.read_csv(demographic_datapath, index_col=[0])
+#get_metadata_tables(demographic_df)
 
-get_metadata_tables(demographic_df)
+
+
+get_metadata_tables(results_df)
 
 
 ########## CDF Plots #################
@@ -1392,4 +1487,7 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         save_csv=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
-'''
+
+
+
+

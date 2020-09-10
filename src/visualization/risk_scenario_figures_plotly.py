@@ -14,18 +14,6 @@ from risk_scenario_figures_shared_functions import (
 def add_plot(fig, df, field, row):
     features_dictionary = get_features_dictionary(field)
 
-    if field in [
-        "true_bolus",
-        "reported_bolus",
-        "true_carb_value",
-        "reported_carb_value",
-        "true_carb_duration",
-        "reported_carb_duration",
-        "undelivered_basal_insulin",
-    ]:
-        # filter out the zero values
-        df = df[df[field] != 0]
-
     fig.add_trace(
         go.Scatter(
             x=df["hours_post_simulation"],
@@ -64,10 +52,10 @@ def set_layout(traces, num_subplots, fig, data_frames, time_range=(0, 8)):
                 fields = []
             fields_in_subplot = fields_in_subplot + fields
             for field in fields:
-                if max(data_frames[index][field]) > max_value:
-                    max_value = max(data_frames[index][field])
-                if min(data_frames[index][field]) < min_value:
-                    min_value = min(data_frames[index][field])
+                if np.nanmax(data_frames[index][field]) > max_value:
+                    max_value = np.nanmax(data_frames[index][field])
+                if np.nanmin(data_frames[index][field]) < min_value:
+                    min_value = np.nanmin(data_frames[index][field])
 
         # TODO: add in the title features here
         if "bg" in fields_in_subplot or "bg_sensor" in fields_in_subplot:
@@ -343,6 +331,7 @@ create_simulation_figure_plotly(
 )
 
 
+#List of dictionaries
 traces = [{0: ["bg", "bg_sensor"], 1: ["sbr"]}, {2:["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]}]
 
 create_simulation_figure_plotly(
