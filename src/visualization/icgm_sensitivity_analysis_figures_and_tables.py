@@ -194,6 +194,43 @@ def _validate_bg(bg_array: "np.ndarray[np.float64]"):
 
 ########### New Code ##################
 
+#I think isi here is true bg (bg) and icgm is sensor bg (sensor bg)
+''' 
+# default icgm and ysi ranges [40, 400] and [0, 900]
+icgm_min, icgm_max = icgm_range
+ysi_min, ysi_max = ysi_range
+
+# calcualte the icgm error (difference and percentage)
+icgm_values = bg_df["icgm"].values
+ysi_values = bg_df["ysi"].values
+icgm_error = icgm_values - ysi_values
+
+bg_df["icgmError"] = icgm_errorv
+abs_difference_error = np.abs(icgm_error)
+bg_df["absError"] = abs_difference_error
+bg_df["absRelDiff"] = 100 * abs_difference_error / ysi_values
+
+bg_df["withinMeasRange"] = (
+        (icgm_values >= icgm_min) & (icgm_values < icgm_max)
+)
+
+#Todo: update these functions
+
+
+'''
+
+def calc_mbe(df):
+    return np.mean(df.loc[df["withinMeasRange"], "icgmError"])
+
+def calc_mard(df):
+    ''' Mean Absolute Relative Deviation (MARD)
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
+    '''
+
+    abs_relative_difference_in_measurement_range = (
+        df.loc[df["withinMeasRange"], "absRelDiff"]
+    )
+    return np.mean(abs_relative_difference_in_measurement_range)
 
 def get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df):
     virtual_patient_num = filename.split("/")[-1].split(".")[0].replace("vp","")
@@ -204,7 +241,7 @@ def get_data(filename, simulation_df, patient_characteristics_df, sensor_charact
     sbr = simulation_df["sbr"].iloc[0]
 
     #Todo: fill in rest of these
-    bias_factor = 0
+    bias_factor = sensor_characteristics_df["bias_norm_factor"].iloc[0]
     bias_drift = 0
     noise_coefficient = sensor_characteristics_df["noise_coefficient"].iloc[0]
     mard = 0
@@ -1207,7 +1244,7 @@ def create_cdf(
 ########## Spearman Correlation Coefficient Table #################
 def spearman_correlation_table(results_df,
                                image_type="png",
-                               table_name="<spearman-correlation-table",
+                               table_name="spearman-correlation-table",
                                analysis_name="icgm-sensitivity-analysis",
                                cell_header_height=[60],
                                cell_height=[30],
@@ -1259,20 +1296,19 @@ file_list = [
     filename for filename in compressed_filestream.getnames() if ".csv" in filename
 ]
 
-for filename in file_list: #[0:5]: #Change this when finish the figures
-    print(filename)
+for i, filename in enumerate(file_list): #[0:100]): #Change this when finish the figures
+    print(i, filename)
     simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
 
     #Get patient and sensor characteristics
     filename_components = filename.split(".")
 
+    #The two json.loads sections appear to be slower
     jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+".json").read())
     patient_characteristics_df = pd.DataFrame(jsonData, index=['i',])
 
     jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+"."+filename_components[1]+"."+filename_components[2]+".json").read())
     sensor_characteristics_df = pd.DataFrame(jsonData, index=['i',])
-
-
 
     # Add in the data
     data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
@@ -1305,7 +1341,6 @@ results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
 # rename the analysis types
 results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
 results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
-
 
 
 ########## DEFINE DICTIONARIES ###################
