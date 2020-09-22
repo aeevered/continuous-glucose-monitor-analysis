@@ -13,6 +13,7 @@ from save_view_fig import save_view_fig
 import tarfile
 import json
 from scipy import stats
+import tidepool_data_science_metrics as metrics
 
 ## Functions from data-science-metrics (ultimately want to just pull in that repo)
 def approximate_steady_state_iob_from_sbr(
@@ -194,38 +195,44 @@ def _validate_bg(bg_array: "np.ndarray[np.float64]"):
 
 ########### New Code ##################
 
-#I think isi here is true bg (bg) and icgm is sensor bg (sensor bg)
-''' 
-# default icgm and ysi ranges [40, 400] and [0, 900]
-icgm_min, icgm_max = icgm_range
-ysi_min, ysi_max = ysi_range
-
-# calcualte the icgm error (difference and percentage)
-icgm_values = bg_df["icgm"].values
-ysi_values = bg_df["ysi"].values
-icgm_error = icgm_values - ysi_values
-
-bg_df["icgmError"] = icgm_errorv
-abs_difference_error = np.abs(icgm_error)
-bg_df["absError"] = abs_difference_error
-bg_df["absRelDiff"] = 100 * abs_difference_error / ysi_values
-
-bg_df["withinMeasRange"] = (
-        (icgm_values >= icgm_min) & (icgm_values < icgm_max)
-)
 
 #Todo: update these functions
+def add_error_fields(df):
+    # default icgm and ysi ranges [40, 400] and [0, 900]
+    sensor_bg_range = (40, 400)
+    bg_range = (0, 900)
+    sensor_min, sensor_max = sensor_bg_range
+    bg_min, bg_max = bg_range
 
+    # calculate the icgm error (difference and percentage)
+    sensor_bg_values = df["bg_sensor"].values
+    bg_values = df["bg"].values
+    icgm_error = sensor_bg_values - bg_values
 
-'''
+    df["icgmError"] = icgm_error
+    abs_difference_error = np.abs(icgm_error)
+    df["absError"] = abs_difference_error
+    df["absRelDiff"] = 100 * abs_difference_error / bg_values
+
+    df["withinMeasRange"] = (
+            (sensor_bg_values >= sensor_min) & (sensor_bg_values < sensor_max)
+    )
+
+    return df
 
 def calc_mbe(df):
+
+    # default icgm and ysi ranges [40, 400] and [0, 900]
+
+    df = add_error_fields(df)
     return np.mean(df.loc[df["withinMeasRange"], "icgmError"])
 
 def calc_mard(df):
     ''' Mean Absolute Relative Deviation (MARD)
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
     '''
+
+    df = add_error_fields(df)
 
     abs_relative_difference_in_measurement_range = (
         df.loc[df["withinMeasRange"], "absRelDiff"]
@@ -242,19 +249,21 @@ def get_data(filename, simulation_df, patient_characteristics_df, sensor_charact
 
     #Todo: fill in rest of these
     bias_factor = sensor_characteristics_df["bias_norm_factor"].iloc[0]
-    bias_drift = 0
+    bias_drift_oscillations = sensor_characteristics_df["bias_drift_oscillations"].iloc[0]
+    bias_drift_range_start = sensor_characteristics_df["bias_drift_range_start"].iloc[0]
+    bias_drift_range_end = sensor_characteristics_df["bias_drift_range_end"].iloc[0]
     noise_coefficient = sensor_characteristics_df["noise_coefficient"].iloc[0]
-    mard = 0
-    mbe = 0
+    mard = calc_mard(simulation_df)
+    mbe = calc_mbe(simulation_df)
 
     bg_test_condition = filename.split(".")[1].replace("bg", "")
     analysis_type = filename.split(".")[3]
-    LBGI = blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
-    LBGI_RS = lbgi_risk_score(LBGI)
-    DKAI = dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
-    DKAI_RS = dka_risk_score(DKAI)
-    return [virtual_patient_num, age, ylw, cir, isf, sbr, bias_factor, bias_drift, noise_coefficient, mard,
-            mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
+    LBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
+    LBGI_RS = metrics.glucose.lbgi_risk_score(LBGI)
+    DKAI = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
+    DKAI_RS = metrics.insulin.dka_risk_score(DKAI)
+    return [virtual_patient_num, age, ylw, cir, isf, sbr, bias_factor, bias_drift_oscillations, bias_drift_range_start,
+            bias_drift_range_end, noise_coefficient, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
 
 
 # %% Visualization Functions
@@ -1255,7 +1264,8 @@ def spearman_correlation_table(results_df,
                                save_fig_path=os.path.join("..", "..", "reports", "figures"),
                                ):
 
-    rows = ["bias_factor", "bias_drift", "noise_coefficient", "mard", "mbe"]
+
+    rows = ["bias_factor", "bias_drift_oscillations", "bias_drift_range_start", "bias_drift_range_end", "noise_coefficient", "mard", "mbe"]
     cols = ["LBGI", "LBGI Risk Score", "DKAI", "DKAI Risk Score"]
 
     data = {}
@@ -1268,7 +1278,7 @@ def spearman_correlation_table(results_df,
         data[col] = row_data
 
     spearman_correlation_df = pd.DataFrame(data)
-    spearman_correlation_df.insert(0, "", ['Bias Factor', 'Bias Drift', 'Noise Coefficient', 'Mean Absolute Relative Difference', "Mean Bias Error"])
+    spearman_correlation_df.insert(0, "", ['Bias Factor', 'Bias Drift Oscillations', "Bias Drift Range Start", "Bias Drift Range End", 'Noise Coefficient', 'Mean Absolute Relative Difference', "Mean Bias Error"])
 
     make_table(
         spearman_correlation_df,
@@ -1289,29 +1299,26 @@ def spearman_correlation_table(results_df,
 
 data = []
 
-path = os.path.join("..", "..", "data", "processed")
-folder_name = "icgm-sensitivity-analysis-results-2020-09-04.gz"
-compressed_filestream = tarfile.open(os.path.join(path, folder_name))
-file_list = [
-    filename for filename in compressed_filestream.getnames() if ".csv" in filename
-]
+path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
 
-for i, filename in enumerate(file_list): #[0:100]): #Change this when finish the figures
-    print(i, filename)
-    simulation_df = pd.read_csv(compressed_filestream.extractfile(filename))
+for i, filename in enumerate(os.listdir(path)): #[0:100]):
+    if filename.endswith(".csv"):
+        print(i, filename)
+        simulation_df = pd.read_csv(os.path.join(path, filename))
+        filename_components = filename.split(".")
 
-    #Get patient and sensor characteristics
-    filename_components = filename.split(".")
+        f = open(os.path.join(path, (filename_components[0] + ".json")), "r")
+        json_data = json.loads(f.read())
+        patient_characteristics_df = pd.DataFrame(json_data, index=['i', ])
 
-    #The two json.loads sections appear to be slower
-    jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+".json").read())
-    patient_characteristics_df = pd.DataFrame(jsonData, index=['i',])
+        f = open(os.path.join(path, (filename_components[0] + "." + filename_components[1] + "." + filename_components[2] + ".json")), "r")
+        json_data = json.loads(f.read())
+        sensor_characteristics_df = pd.DataFrame(json_data, index=['i', ])
 
-    jsonData = json.loads(compressed_filestream.extractfile(filename_components[0]+"."+filename_components[1]+"."+filename_components[2]+".json").read())
-    sensor_characteristics_df = pd.DataFrame(jsonData, index=['i',])
+        # Add in the data
+        data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
 
-    # Add in the data
-    data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
+
 
 columns = [
     "virtual_patient_num",
@@ -1321,7 +1328,9 @@ columns = [
     "ISF",
     "SBR",
     "bias_factor",
-    "bias_drift",
+    "bias_drift_oscillations",
+    "bias_drift_range_start",
+    "bias_drift_range_end",
     "noise_coefficient",
     "mard",
     "mbe",
@@ -1342,6 +1351,7 @@ results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
 results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
 results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
 
+print(results_df["bias_factor"].unique())
 
 ########## DEFINE DICTIONARIES ###################
 # primarily for renaming
@@ -1522,7 +1532,6 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         save_csv=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
-
 
 
 

@@ -1,0 +1,4 @@
+,,Number of Simulations,Mean,Standard Deviation,Minimum,25%,Median,75%,Maximum
+0,Correction Bolus Analyses,26610.0,0.27,0.73,0.0,0.0,0.0,0.0,6.83
+1,Meal Bolus Analyses,26610.0,0.01,0.13,0.0,0.0,0.0,0.0,4.5
+2,Temp Basal Analyses,26610.0,0.26,0.72,0.0,0.0,0.0,0.0,6.83

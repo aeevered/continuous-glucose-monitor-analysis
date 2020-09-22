@@ -1,0 +1,4 @@
+,,0 - None,1 - Negligible,2 - Minor,3 - Serious,4 - Critical
+0,Correction Bolus Analyses,3023 (11.4%),18270 (68.7%),3432 (12.9%),1762 (6.6%),123 (0.5%)
+1,Meal Bolus Analyses,2887 (10.8%),23256 (87.4%),430 (1.6%),37 (0.1%),0 (0.0%)
+2,Temp Basal Analyses,3599 (13.5%),17841 (67.0%),3313 (12.5%),1737 (6.5%),120 (0.5%)

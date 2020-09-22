@@ -1,0 +1,8 @@
+,,LBGI,LBGI Risk Score,DKAI,DKAI Risk Score
+0,Bias Factor,"(nan, nan)","(nan, nan)","(nan, nan)","(nan, nan)"
+1,Bias Drift Oscillations,"(-0.148, 0.0)","(-0.199, 0.0)","(0.071, 0.0)","(0.104, 0.0)"
+2,Bias Drift Range Start,"(0.205, 0.0)","(0.241, 0.0)","(-0.095, 0.0)","(-0.12, 0.0)"
+3,Bias Drift Range End,"(-0.182, 0.0)","(-0.209, 0.0)","(-0.055, 0.0)","(-0.019, 0.0)"
+4,Noise Coefficient,"(0.086, 0.0)","(0.106, 0.0)","(-0.024, 0.0)","(-0.05, 0.0)"
+5,Mean Absolute Relative Difference,"(0.193, 0.0)","(-0.022, 0.0)","(-0.001, 0.785)","(0.041, 0.0)"
+6,Mean Bias Error,"(0.215, 0.0)","(0.221, 0.0)","(-0.216, 0.0)","(-0.167, 0.0)"
