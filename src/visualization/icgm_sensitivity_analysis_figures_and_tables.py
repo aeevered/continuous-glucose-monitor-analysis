@@ -262,8 +262,9 @@ def get_data(filename, simulation_df, patient_characteristics_df, sensor_charact
     LBGI_RS = metrics.glucose.lbgi_risk_score(LBGI)
     DKAI = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
     DKAI_RS = metrics.insulin.dka_risk_score(DKAI)
+    HBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[1]
     return [virtual_patient_num, age, ylw, cir, isf, sbr, bias_factor, bias_drift_oscillations, bias_drift_range_start,
-            bias_drift_range_end, noise_coefficient, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS]
+            bias_drift_range_end, noise_coefficient, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS, HBGI]
 
 
 # %% Visualization Functions
@@ -1295,6 +1296,30 @@ def spearman_correlation_table(results_df,
     )
     return
 
+# Function for checking distributions
+def create_scatter(
+        df,
+        x_value="cir",
+        y_value="LBGI",
+        image_type="png",
+        analysis_name="icgm_sensitivity_analysis",
+        view_fig=True,
+        save_fig=True,
+        save_fig_path=os.path.join("..", "..", "reports", "figures"),
+):
+    title = "Distribution of " + y_value + " by " + x_value
+    figure_name = "distribution_" + y_value + "_" + x_value
+
+    fig = go.Figure()
+    fig.add_scatter(x=df[x_value], y=df[y_value], mode='markers')
+    fig.update_layout(title=title, xaxis_title=x_value, yaxis_title = y_value)
+
+    save_view_fig(
+        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
+    )
+    return
+
+
 #### LOAD IN DATA #####
 
 data = []
@@ -1302,21 +1327,22 @@ data = []
 path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
 
 for i, filename in enumerate(os.listdir(path)): #[0:100]):
-    if filename.endswith(".csv"):
-        print(i, filename)
-        simulation_df = pd.read_csv(os.path.join(path, filename))
-        filename_components = filename.split(".")
+    if (filename.endswith(".csv")):
+        if int(filename.split(".")[0].replace("vp", "")) not in (14, 3, 31, 35, 97): #Filter out the virtual patients outside of clinical bounds
+            print(i, filename)
+            simulation_df = pd.read_csv(os.path.join(path, filename))
+            filename_components = filename.split(".")
 
-        f = open(os.path.join(path, (filename_components[0] + ".json")), "r")
-        json_data = json.loads(f.read())
-        patient_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+            f = open(os.path.join(path, (filename_components[0] + ".json")), "r")
+            json_data = json.loads(f.read())
+            patient_characteristics_df = pd.DataFrame(json_data, index=['i', ])
 
-        f = open(os.path.join(path, (filename_components[0] + "." + filename_components[1] + "." + filename_components[2] + ".json")), "r")
-        json_data = json.loads(f.read())
-        sensor_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+            f = open(os.path.join(path, (filename_components[0] + "." + filename_components[1] + "." + filename_components[2] + ".json")), "r")
+            json_data = json.loads(f.read())
+            sensor_characteristics_df = pd.DataFrame(json_data, index=['i', ])
 
-        # Add in the data
-        data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
+            # Add in the data
+            data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
 
 
 
@@ -1339,7 +1365,8 @@ columns = [
     "LBGI",
     "LBGI Risk Score",
     "DKAI",
-    "DKAI Risk Score"
+    "DKAI Risk Score",
+    "HBGI"
 ]
 
 
@@ -1393,6 +1420,11 @@ level_of_analysis_dict = {
 
 #### CREATE FIGURES #####
 
+#Check distributions
+for x, y in itertools.product(["CIR", "ISF", "SBR"], ["LBGI", "DKAI", "HBGI"]):
+    create_scatter(df=results_df, x_value=x, y_value=y)
+
+'''
 #Create Spearman Correlation Coefficient Table
 spearman_correlation_table(results_df)
 
@@ -1532,6 +1564,9 @@ for analysis_level, metric in itertools.product(analysis_levels, metrics):
         save_csv=True,
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
     )
+'''
+
+
 
 
 
