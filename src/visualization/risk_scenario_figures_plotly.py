@@ -11,6 +11,7 @@ from risk_scenario_figures_shared_functions import (
 
 # reference: https://chart-studio.plotly.com/~empet/15243/animating-traces-in-subplotsbr/#/
 
+
 def add_plot(fig, df, field, row):
     features_dictionary = get_features_dictionary(field)
 
@@ -36,7 +37,15 @@ def add_plot(fig, df, field, row):
     return fig
 
 
-def set_layout(traces, num_subplots, fig, data_frames, time_range=(0, 8)):
+def set_layout(
+    traces,
+    num_subplots,
+    fig,
+    data_frames,
+    time_range=(0, 8),
+    custom_axes_ranges=False,
+    custom_tick_marks=False,
+):
     # fig.update_layout(width=700, height=475)
     fig.update_xaxes(range=[time_range[0], time_range[1]], title="Hours")
 
@@ -72,6 +81,24 @@ def set_layout(traces, num_subplots, fig, data_frames, time_range=(0, 8)):
                 row=subplot + 1,
                 col=1,
             )
+
+    if custom_axes_ranges is not False:
+        for subplot in range(num_subplots):
+            fig.update_yaxes(
+                range=[custom_axes_ranges[subplot][0], custom_axes_ranges[subplot][1]],
+                row=subplot + 1,
+                col=1,
+            )
+
+    if custom_tick_marks is not False:
+        for subplot in range(num_subplots):
+            fig.update_yaxes(
+                tickmode="array",
+                tickvals=custom_tick_marks[subplot],
+                row=subplot + 1,
+                col=1,
+            )
+
     return fig
 
 
@@ -83,6 +110,7 @@ def create_simulation_figure_plotly(
     subplots,
     data_frames=[],
     files_need_loaded=False,
+    show_legend=True,
     time_range=(0, 8),
     main_title="Risk Scenario Simulation",
     subplot_titles=[],
@@ -91,10 +119,12 @@ def create_simulation_figure_plotly(
     figure_name="simulation_figure",
     analysis_name="risk-scenarios",
     animate=True,
+    custom_axes_ranges=False,
+    custom_tick_marks=False,
 ):
     # Load data files
     if files_need_loaded:
-        data_frames=[]
+        data_frames = []
         for file in file_names:
             df = data_loading_and_preparation(
                 os.path.abspath(os.path.join(file_location, file))
@@ -107,7 +137,15 @@ def create_simulation_figure_plotly(
     for i in fig["layout"]["annotations"]:
         i["font"] = dict(size=14)
 
-    fig = set_layout(traces, subplots, fig, data_frames, time_range)
+    fig = set_layout(
+        traces,
+        subplots,
+        fig,
+        data_frames,
+        time_range,
+        custom_axes_ranges=custom_axes_ranges,
+        custom_tick_marks=custom_tick_marks,
+    )
 
     # Add plots
     for index, df in enumerate(data_frames):
@@ -124,7 +162,9 @@ def create_simulation_figure_plotly(
             x=0.55,
             y=-0.27,
             showarrow=False,
-            text="This visual shows the results of running the simulation for " + str(time_range[1]) + " hours.",
+            text="This visual shows the results of running the simulation for "
+            + str(time_range[1])
+            + " hours.",
             font=dict(size=13),
         ),
         dict(
@@ -259,8 +299,8 @@ def create_simulation_figure_plotly(
             font=dict(size=10),
         )
 
-        #This controls the speed
-        #fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 200
+        # This controls the speed
+        # fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 200
 
     else:
         fig.update_layout(
@@ -270,6 +310,9 @@ def create_simulation_figure_plotly(
             margin_t=90,
             font=dict(size=10),
         )
+
+    if show_legend is False:
+        fig.update_layout(showlegend=False)
 
     save_view_fig(
         fig,
@@ -285,7 +328,8 @@ def create_simulation_figure_plotly(
 
     return
 
-'''
+
+"""
 file_location = os.path.join("..", "..", "data", "processed")
 loop_filename = "risk_scenarios_PyLoopkit v0.1.csv"
 no_loop_filename = "risk_scenarios_do_nothing.csv"
@@ -355,4 +399,4 @@ create_simulation_figure_plotly(
     animate=True,
 )
 
-'''
+"""

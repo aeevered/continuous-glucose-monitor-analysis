@@ -96,7 +96,7 @@ for i, scenario_filename in enumerate(os.listdir(scenarios_path))[0:0]):
 
 scenarios_outside_clinical_bounds_df = pd.DataFrame(list(zip(scenarios_with_settings_outside_clinical_bounds, virtual_patients, isf, cir, br, max_bolus)), columns =['scenarios_with_settings_outside_clinical_bounds', 'virtual_patients', "isf", "cir", "br", "max_bolus"])
 
-#scenarios_outside_clinical_bounds_df.to_csv("/Users/anneevered/Desktop/Tidepool 2020/Tidepool Repositories/data-science--explore--risk-sim-figures/data/processed/scenarios_outside_clinical_bounds.csv")
+#scenarios_outside_clinical_bounds_df.to_csv(".../Tidepool 2020/Tidepool Repositories/data-science--explore--risk-sim-figures/data/processed/scenarios_outside_clinical_bounds.csv")
 
 
 

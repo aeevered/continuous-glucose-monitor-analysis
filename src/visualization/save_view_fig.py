@@ -32,7 +32,7 @@ def save_view_fig(
             format=image_type,
             width=width,
             height=height,
-            scale=2
+            scale=2,
         )
 
     return

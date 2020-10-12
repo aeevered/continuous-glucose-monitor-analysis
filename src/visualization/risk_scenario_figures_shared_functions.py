@@ -33,14 +33,16 @@ def data_preparation(sim_df):
             pd.isnull, sim_df["sbr"]
         )
 
-    cols = ["true_bolus",
+    cols = [
+        "true_bolus",
         "suggested_bolus",
         "reported_bolus",
         "true_carb_value",
         "reported_carb_value",
         "true_carb_duration",
         "reported_carb_duration",
-        "undelivered_basal_insulin"]
+        "undelivered_basal_insulin",
+    ]
 
     for col in cols:
         if col in sim_df.columns:

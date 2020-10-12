@@ -14,6 +14,9 @@ import tarfile
 import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
+from plotly.subplots import make_subplots
+from risk_scenario_figures_plotly import create_simulation_figure_plotly
+from risk_scenario_figures_shared_functions import data_loading_and_preparation
 
 ## Functions from data-science-metrics (ultimately want to just pull in that repo)
 def approximate_steady_state_iob_from_sbr(
@@ -241,13 +244,16 @@ def calc_mard(df):
 
 def get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df):
     virtual_patient_num = filename.split("/")[-1].split(".")[0].replace("vp","")
+    sensor_num = filename.split("/")[-1].split(".")[2].replace("s","").replace("Senor", "Sensor")
     age = patient_characteristics_df["age"].iloc[0]
     ylw = patient_characteristics_df["ylw"].iloc[0]
     cir = simulation_df["cir"].iloc[0]
     isf = simulation_df["isf"].iloc[0]
     sbr = simulation_df["sbr"].iloc[0]
+    starting_bg = simulation_df["bg"].iloc[0]
 
     #Todo: fill in rest of these
+    initial_bias = sensor_characteristics_df["initial_bias"].iloc[0]
     bias_factor = sensor_characteristics_df["bias_norm_factor"].iloc[0]
     bias_drift_oscillations = sensor_characteristics_df["bias_drift_oscillations"].iloc[0]
     bias_drift_range_start = sensor_characteristics_df["bias_drift_range_start"].iloc[0]
@@ -263,8 +269,29 @@ def get_data(filename, simulation_df, patient_characteristics_df, sensor_charact
     DKAI = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
     DKAI_RS = metrics.insulin.dka_risk_score(DKAI)
     HBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[1]
-    return [virtual_patient_num, age, ylw, cir, isf, sbr, bias_factor, bias_drift_oscillations, bias_drift_range_start,
-            bias_drift_range_end, noise_coefficient, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS, HBGI]
+    BGRI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[2]
+    percent_lt_54 = metrics.glucose.percent_values_lt_54(bg_array=simulation_df["bg"])
+    return [filename, virtual_patient_num, sensor_num, age, ylw, cir, isf, sbr, starting_bg, initial_bias, bias_factor, bias_drift_oscillations, bias_drift_range_start,
+            bias_drift_range_end, noise_coefficient, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS, HBGI, BGRI, percent_lt_54]
+
+def get_data_ideal_sensor(filename, simulation_df):
+    virtual_patient_num = filename.split("/")[-1].split(".")[0].replace("vp","")
+    cir = simulation_df["cir"].iloc[0]
+    isf = simulation_df["isf"].iloc[0]
+    sbr = simulation_df["sbr"].iloc[0]
+    starting_bg = simulation_df["bg"].iloc[0]
+
+    mard = calc_mard(simulation_df)
+    mbe = calc_mbe(simulation_df)
+
+    bg_test_condition = filename.split(".")[1].replace("bg", "")
+    analysis_type = filename.split(".")[3]
+    LBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
+    LBGI_RS = metrics.glucose.lbgi_risk_score(LBGI)
+    DKAI = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
+    DKAI_RS = metrics.insulin.dka_risk_score(DKAI)
+    HBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[1]
+    return [filename, virtual_patient_num, cir, isf, sbr, starting_bg, mard, mbe, bg_test_condition, analysis_type, LBGI, LBGI_RS, DKAI, DKAI_RS, HBGI]
 
 
 # %% Visualization Functions
@@ -281,7 +308,7 @@ def bin_data(bin_breakpoints):
     return pd.IntervalIndex.from_breaks(bin_breakpoints, closed="left")
 
 
-def get_metadata_tables(demographic_df):
+def get_metadata_tables(demographic_df, fig_path):
     # %% prepare demographic data for tables
 
     virtual_patient_group = demographic_df.groupby("virtual_patient_num")
@@ -327,6 +354,7 @@ def get_metadata_tables(demographic_df):
         image_type="png",
         view_fig=True,
         save_fig=True,
+        save_fig_path=fig_path
     )
 
     # %% Years Living With (YLW) Breakdown Table
@@ -362,6 +390,7 @@ def get_metadata_tables(demographic_df):
         image_type="png",
         view_fig=True,
         save_fig=True,
+        save_fig_path=fig_path
     )
     # %% Carb to Insulin Ratio Table
     cir_bin_breakpoints = np.array(
@@ -407,6 +436,7 @@ def get_metadata_tables(demographic_df):
         image_type="png",
         view_fig=True,
         save_fig=True,
+        save_fig_path=fig_path
     )
 
     # %% ISF Table
@@ -454,6 +484,7 @@ def get_metadata_tables(demographic_df):
         image_type="png",
         view_fig=True,
         save_fig=True,
+        save_fig_path=fig_path
     )
 
     # %% Basal Rate (BR) Table
@@ -493,6 +524,7 @@ def get_metadata_tables(demographic_df):
         image_type="png",
         view_fig=True,
         save_fig=True,
+        save_fig_path=fig_path
     )
 
 
@@ -673,7 +705,6 @@ def make_boxplot(
         save_fig,
         save_fig_path,
     )
-
     return
 
 
@@ -777,7 +808,7 @@ def make_bubble_plot(
             )
         )
 
-        sum_df = grouped_df.groupby(analysis_level)["count"].transform("sum")
+        sum_df = grouped_df.groupby(level_of_analysis)["count"].transform("sum")
         grouped_df["percentage"] = (
             grouped_df["count"].div(sum_df).apply(lambda x: "{:.1%}".format(x))
         )
@@ -796,7 +827,7 @@ def make_bubble_plot(
         for metric_value, level in itertools.product(metric_values, analysis_levels):
             if not (
                 (grouped_df[metric] == metric_value)
-                & (grouped_df[analysis_level] == level)
+                & (grouped_df[level_of_analysis] == level)
             ).any():
                 data = [[level, metric_value, score_dict[metric_value], 0.001, ""]]
                 df2 = pd.DataFrame(
@@ -830,7 +861,7 @@ def make_bubble_plot(
             size_max=25,
         )
 
-        if analysis_level == "bg_test_condition":
+        if level_of_analysis == "bg_test_condition":
             annotation_font_size = 9
             height_parameter = 0.1
         else:
@@ -1301,87 +1332,912 @@ def create_scatter(
         df,
         x_value="cir",
         y_value="LBGI",
+        color_value="",
         image_type="png",
         analysis_name="icgm_sensitivity_analysis",
-        view_fig=True,
+        view_fig=False,
         save_fig=True,
+        title="",
+        fig_name="",
         save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
-    title = "Distribution of " + y_value + " by " + x_value
-    figure_name = "distribution_" + y_value + "_" + x_value
 
-    fig = go.Figure()
-    fig.add_scatter(x=df[x_value], y=df[y_value], mode='markers')
-    fig.update_layout(title=title, xaxis_title=x_value, yaxis_title = y_value)
+    if color_value != "":
+        df = df.sort_values(by=color_value, ascending=True)
+        fig = px.scatter(data_frame=df, x=x_value, y=y_value, opacity=0.3, color=color_value, title=title, color_continuous_scale=px.colors.sequential.Viridis) #, color_continuous_scale=px.colors.diverging.RdYlGn)
+        fig.update_traces(marker=dict(size=3))
+    else:
+        fig = px.scatter(data_frame = df, x=x_value, y=y_value, opacity=0.3, title=title)
+
+        fig.update_traces(marker=dict(size=3))
 
     save_view_fig(
-        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
+        fig, image_type, fig_name, analysis_name, view_fig, save_fig, save_fig_path,
     )
     return
 
 
-#### LOAD IN DATA #####
+def generate_all_check_distribution_scatterplots(df, fig_path=os.path.join("..", "..", "reports", "figures")):
+    settings = ["CIR", "ISF", "SBR"]
+    outcome_metrics = ["LBGI", "DKAI", "HBGI"]
+    sensor_characteristics = ["bias_drift_oscillations", "bias_drift_range_start", "bias_drift_range_end",
+                              "noise_coefficient"]
+    analysis_levels = ["bg_test_condition_label", "analysis_type_label"]
 
-data = []
+    for x, y in itertools.product(sensor_characteristics, outcome_metrics):
+        create_scatter(df=df,
+                       x_value=x,
+                       y_value=y,
+                       title="Distribution of " + y + " by " + x,
+                       fig_name="distribution_" + y + "_" + x,
+                       save_fig_path=fig_path)
 
-path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
+    # Investigate high LBGI risk scores
+    create_scatter(df=df,
+                   x_value="starting_bg",
+                   y_value="LBGI",
+                   color_value="LBGI Risk Score String",
+                   title="Distribution of LBGI by Simulation Starting BG",
+                   fig_name="distribution_LBGI_by_starting_bg",
+                   save_fig_path=fig_path)
 
-for i, filename in enumerate(os.listdir(path)): #[0:100]):
-    if (filename.endswith(".csv")):
-        if int(filename.split(".")[0].replace("vp", "")) not in (14, 3, 31, 35, 97): #Filter out the virtual patients outside of clinical bounds
-            print(i, filename)
-            simulation_df = pd.read_csv(os.path.join(path, filename))
-            filename_components = filename.split(".")
+    # Check distributions
+    unusual_settings_results_df = df[df["CIR"] < 4]
+    rest_results_df = df[df["CIR"] >= 4]
+    for x, y in itertools.product(sensor_characteristics, ["HBGI", "LBGI"]):
+        create_scatter(df=unusual_settings_results_df,
+                       x_value=x,
+                       y_value=y,
+                       title="Distribution of " + y + " by " + x + "<br>Where CIR < 4",
+                       fig_name="distribution_" + y + "_" + x + "_cir<4",
+                       save_fig_path=fig_path)
+        create_scatter(df=rest_results_df,
+                       x_value=x,
+                       y_value=y,
+                       title="Distribution of " + y + " by " + x + "<br>Where CIR >= 4",
+                       fig_name="distribution_" + y + "_" + x + "_cir>=4",
+                       save_fig_path=fig_path)
 
-            f = open(os.path.join(path, (filename_components[0] + ".json")), "r")
-            json_data = json.loads(f.read())
-            patient_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+    unusual_settings_results_df = df[df["SBR"] < 0.5]
+    rest_results_df = df[df["SBR"] >= 0.5]
+    for x, y in itertools.product(sensor_characteristics, ["HBGI", "LBGI"]):
+        create_scatter(df=unusual_settings_results_df,
+                       x_value=x,
+                       y_value=y,
+                       title="Distribution of " + y + " by " + x + "<br>Where SBR < 0.5",
+                       fig_name="distribution_" + y + "_" + x + "_sbr<0.5",
+                       save_fig_path=save_fig_path)
+        create_scatter(df=rest_results_df,
+                       x_value=x,
+                       y_value=y,
+                       title="Distribution of " + y + " by " + x + "<br>Where SBR >= 0.5",
+                       fig_name="distribution_" + y + "_" + x + "_sbr>=0.5",
+                       save_fig_path=fig_path)
 
-            f = open(os.path.join(path, (filename_components[0] + "." + filename_components[1] + "." + filename_components[2] + ".json")), "r")
-            json_data = json.loads(f.read())
-            sensor_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+    for x, y in itertools.product(sensor_characteristics, outcome_metrics):
+        for setting in settings:
+            create_scatter(df=df,
+                           x_value=x,
+                           y_value=y,
+                           color_value=setting,
+                           title="Distribution of " + y + " by " + x + "<br>(Color-coded by " + setting + ")",
+                           fig_name="distribution_" + y + "_" + x + "_color_" + setting,
+                           save_fig_path=fig_path)
+        for analysis_level in analysis_levels:
+            create_scatter(df=df,
+                           x_value=x,
+                           y_value=y,
+                           color_value=analysis_level,
+                           title="Distribution of " + y + " by " + x + "<br>(Color-coded by " + analysis_level + ")",
+                           fig_name="distribution_" + y + "_" + x + "_color_" + analysis_level,
+                           save_fig_path=fig_path)
 
-            # Add in the data
-            data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
+    for x, y in itertools.product(settings, outcome_metrics):
+        for analysis_level in analysis_levels:
+            create_scatter(df=df,
+                           x_value=x,
+                           y_value=y,
+                           color_value=analysis_level,
+                           title="Distribution of " + y + " by " + x + "<br>(Color-coded by " + analysis_level + ")",
+                           fig_name="distribution_" + y + "_" + x + "_color_" + analysis_level,
+                           save_fig_path=fig_path)
+
+    # Check distributions
+    for x, y in itertools.product(settings, outcome_metrics):
+        create_scatter(df=df, x_value=x, y_value=y, save_fig_path=fig_path)
+
+    for x, y in itertools.product(settings, settings):
+        for color in outcome_metrics:
+            create_scatter(df=df, x_value=x, y_value=y, color_value=color, save_fig_path=fig_path)
+
+    return
+
+
+def run_pairwise_comparison(results_df, baseline_df, fig_path=os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures")):
+    # Add ratio to each row
+    # Need to look up for each row into the baseline_df by virtual patient and by
+
+    combined_df = results_df.merge(baseline_df, how="left", left_on=["virtual_patient_num", "analysis_type", "bg_test_condition"], right_on=["virtual_patient_num", "analysis_type", "bg_test_condition"], suffixes=('_icgm', '_baseline'))
+
+    combined_df["LBGI Ratio"] = combined_df["LBGI_icgm"]/combined_df["LBGI_baseline"]
+    combined_df["HBGI Ratio"] = combined_df["HBGI_icgm"]/combined_df["HBGI_baseline"]
+    combined_df["DKAI Ratio"] = combined_df["DKAI_icgm"]/combined_df["DKAI_baseline"]
+    combined_df["BGRI Ratio"] = combined_df["BGRI_icgm"] / combined_df["BGRI_baseline"]
+    combined_df["Percent <54 Ratio"] = combined_df["percent_lt_54_icgm"] / combined_df["percent_lt_54_baseline"]
+
+    combined_df["LBGI Percent Change"] = ((combined_df["LBGI_icgm"] - combined_df["LBGI_baseline"])*100)/combined_df["LBGI_baseline"]
+    combined_df["HBGI Percent Change"] = ((combined_df["HBGI_icgm"] - combined_df["HBGI_baseline"])*100)/combined_df["HBGI_baseline"]
+    combined_df["DKAI Percent Change"] = ((combined_df["DKAI_icgm"] - combined_df["DKAI_baseline"])*100)/combined_df["DKAI_baseline"]
+    combined_df["BGRI Percent Change"] = ((combined_df["BGRI_icgm"] - combined_df["BGRI_baseline"])*100)/combined_df["BGRI_baseline"]
+    combined_df["Percent <54 Percent Change"] = ((combined_df["percent_lt_54_icgm"] - combined_df["percent_lt_54_baseline"])*100)/combined_df["percent_lt_54_baseline"]
+
+
+    combined_df["LBGI Difference"] = combined_df["LBGI_icgm"] - combined_df["LBGI_baseline"]
+    combined_df["HBGI Difference"] = combined_df["HBGI_icgm"] - combined_df["HBGI_baseline"]
+    combined_df["DKAI Difference"] = combined_df["DKAI_icgm"] - combined_df["DKAI_baseline"]
+    combined_df["BGRI Difference"] = combined_df["BGRI_icgm"] - combined_df["BGRI_baseline"]
+    combined_df["Percent <54 Difference"] = combined_df["percent_lt_54_icgm"] - combined_df["percent_lt_54_baseline"]
+
+    combined_df['sensor_num_icgm'] = combined_df['sensor_num_icgm'].apply(lambda x: int(x))
+
+    combined_df = combined_df.sort_values(by=['sensor_num_icgm'])
+
+    combined_df.to_csv(path_or_buf=os.path.join("..", "..", "reports", "figures", "pairwise_comparison_combined_df.csv"), index=False)
+
+def run_pairwise_comparison_test():
+
+    fig_path = os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures")
+    combined_df = pd.read_csv("/Users/anneevered/Desktop/Tidepool 2020/Tidepool Repositories/data-science--explore--risk-sim-figures/reports/figures/pairwise_comparison_combined_df.csv")
+
+    combined_df['sensor_num_icgm'] = combined_df['sensor_num_icgm'].apply(lambda x: int(x))
+    combined_df = combined_df.sort_values(by=['sensor_num_icgm'])
+
+    combined_df['sensor_num_icgm_string'] = combined_df['sensor_num_icgm'].apply(lambda x: "Sensor "+str(x))
+
+    # Make Paired Comparison Box Plot
+    #create_paired_comparison_box_plots(combined_df, fig_path=fig_path)
+
+    #Make Paired Comparison Scatter Plot
+    #create_paired_comparison_scatter_plots(combined_df, fig_path=fig_path)
+
+    # Generate graphs for all of the visualizations that do not match risk scores
+    #create_visualization_simulations_changed_rs(combined_df)
+
+    #Generate a table that shows each of the sensors and all of the characteristics
+    #create_sensor_characteristics_table(combined_df, fig_path=fig_path)
+
+    #Generate scatterplots showing distribution of outcome metrics by sensor
+    #create_paired_comparison_by_sensor_scatter_plots(combined_df, fig_path)
+
+    # Generate scatterplots showing distribution of outcome metrics by analysis_type
+    #create_paired_comparison_by_analysis_level_scatter_plots(combined_df,  fig_path = os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures", "distributions-sensor-characteristic-analysis-level"), analysis_level="analysis_type_label")
+    #create_paired_comparison_by_analysis_level_scatter_plots(combined_df,  fig_path = os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures", "distributions-sensor-characteristic-analysis-level"), analysis_level="bg_test_condition_label")
+
+    # Generate scatterplots showing distribution of outcome metrics across sensor characteristic space
+    create_paired_comparison_bivariate_sensor_characteristic_scatter(combined_df, fig_path = os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures", "distributions-sensor-characteristc-bivariate-space"))
+
+    return
+
+def create_paired_comparison_bivariate_sensor_characteristic_scatter(df, fig_path):
+
+    sensor_characteristics = ["initial_bias", "bias_drift_oscillations", "bias_drift_range_start", "bias_drift_range_end","noise_coefficient"]
+
+    outcome_metrics=["LBGI","HBGI","DKAI"]
+
+    comparison_types = [" Difference", " Ratio",]
+
+    for comparison_type, outcome_metric, sensor_characteristic_x, sensor_characteristic_y in itertools.product(comparison_types, outcome_metrics, sensor_characteristics, ["initial_bias"]):
+        if sensor_characteristic_x != sensor_characteristic_y:
+            df_reduced = df.replace([np.inf, -np.inf], np.nan).dropna(subset=[outcome_metric+comparison_type], how="all")
+            print(df_reduced[outcome_metric+comparison_type].unique())
+            create_scatter(df=df_reduced,
+                           x_value=sensor_characteristic_x+"_icgm",
+                           y_value=sensor_characteristic_y+"_icgm",
+                           color_value=outcome_metric+comparison_type,
+                           title=outcome_metric + comparison_type + " Baseline vs. iCGM Sensors<br>" + sensor_characteristic_x + " by " + sensor_characteristic_y,
+                           fig_name="distribution_"+outcome_metric+comparison_type+"_"+sensor_characteristic_x+"_by_"+sensor_characteristic_y,
+                           save_fig_path=fig_path)
+
+
+    #Create a plot for each of the sensor characteristics specified
+    for comparison_type in []: #comparison_types:
+        for outcome_metric in []: #outcome_metrics:
+            n_cols = len(sensor_characteristics)
+            n_rows = len(sensor_characteristics)
+            subplot_titles = []
+
+            sensor_characteristics_dict = {"sensor_num": "iCGM Sensor Number",
+                         'initial_bias': 'Initial Bias',
+                         'bias_factor': 'Bias Factor',
+                         'bias_drift_oscillations': 'Bias Factor Oscillations',
+                         "bias_drift_range_start": 'Bias Drift Range Start',
+                         "bias_drift_range_end": 'Bias Drift Range End',
+                         "noise_coefficient": 'Noise Coefficient'}
+
+            for sensor_characteristics_y in sensor_characteristics:
+                for sensor_characteristics_x in sensor_characteristics:
+                    subplot_titles.append(sensor_characteristics_dict[sensor_characteristics_y] + " By " + sensor_characteristics_dict[sensor_characteristics_x])
+
+            fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=subplot_titles, horizontal_spacing=0.1)
+
+            for i, sensor_characteristic_y in enumerate(sensor_characteristics):
+                for j, sensor_characteristic_x in enumerate(sensor_characteristics):
+
+                    fig.add_trace(go.Scatter(x=df[sensor_characteristic_x+"_icgm"],
+                                             y=df[sensor_characteristic_y+"_icgm"],
+                                             #color=df[sensor_characteristic_y+"_icgm"],
+                                             mode='markers',
+                                             marker=dict(size=3, opacity=.4, color=df[outcome_metric+comparison_type]),
+                                             showlegend=False),
+                                  row=i + 1,
+                                  col=j + 1)
+
+                    fig.update_xaxes(title_text=sensor_characteristics_dict[sensor_characteristic_x], row=i + 1, col=j + 1)
+                    fig.update_yaxes(title_text=sensor_characteristics_dict[sensor_characteristic_y], row=i + 1, col=j + 1)
+
+            fig.update_layout(
+                title=outcome_metric + comparison_type + "<br>Baseline vs. iCGM Sensors Across Sensor Characteristic Space",
+                legend_title=outcome_metric + comparison_type,
+                showlegend=True,
+                font_size=5
+            )
+
+            for i in fig['layout']['annotations']:
+                i['font'] = dict(size=7)
+
+            save_view_fig(
+                fig,
+                image_type="png",
+                figure_name="distribution_"+outcome_metric+comparison_type+"_across_sensor_characteristic_space",
+                analysis_name="icgm-sensitivity-analysis",
+                view_fig=True,
+                save_fig=True,
+                save_fig_path=fig_path,
+                width=200 * n_cols,
+                height=200 * n_rows,
+            )
+
+    return
+
+
+def create_paired_comparison_scatter_plots(combined_df, fig_path):
+    comparison_types = [" Ratio", " Percent Change", " Difference"]
+
+    outcome_metrics = ["LBGI", "DKAI", "HBGI", "Percent <54"]
+    sensor_characteristics = ["initial_bias_icgm","bias_drift_oscillations_icgm", "bias_drift_range_start_icgm", "bias_drift_range_end_icgm",
+                              "noise_coefficient_icgm"]
+
+    sensor_characteristic_label_dict = {"initial_bias_icgm":"Initial Bias",
+                                        "bias_drift_oscillations_icgm":"Bias Drift Oscillation",
+                                        "bias_drift_range_start_icgm":"Bias Drift Range Start",
+                                        "bias_drift_range_end_icgm":"Bias Drift Range End",
+                                        "noise_coefficient_icgm":"Noise Coefficient"}
+
+
+    for comparison_type, outcome_metric, sensor_characteristic in itertools.product(comparison_types, outcome_metrics, sensor_characteristics):
+        create_scatter(df=combined_df,
+                       x_value=sensor_characteristic,
+                       y_value=outcome_metric+comparison_type,
+                       title="Distribution of " + outcome_metric+comparison_type+ "<br>By " + sensor_characteristic_label_dict[sensor_characteristic],
+                       fig_name="distribution_" + outcome_metric + "_" + comparison_type + "_by_" + sensor_characteristic,
+                       save_fig_path=fig_path)
+
+    return
+
+
+def create_paired_comparison_box_plots(combined_df, fig_path):
+    graph_metrics = ["LBGI Ratio", "HBGI Ratio", "DKAI Ratio", "BGRI Ratio", "Percent <54 Ratio",
+               "LBGI Percent Change", "HBGI Percent Change", "DKAI Percent Change",
+               "BGRI Percent Change", "Percent <54 Percent Change",
+               "LBGI Difference", "HBGI Difference", "DKAI Difference", "BGRI Difference",
+               "Percent <54 Difference"]
+
+    for metric in [graph_metrics]:
+
+        fig = px.box(combined_df,
+                     x="sensor_num_icgm_string",
+                     y=metric,
+                     color="sensor_num_icgm_string",
+                     labels={"sensor_num_icgm_string": "Sensor Number"},
+                     title=metric + " (Between Baseline and iCGM Simulations)",
+                     points=False)
+
+        fig.update_xaxes(tick0=0, dtick=1)
+        fig.update_layout(showlegend=False)
+
+        save_view_fig(
+            fig,
+            image_type="png",
+            figure_name=metric+"_pairwise_comparison_boxplot",
+            analysis_name="icgm-sensitivity-analysis",
+            view_fig=True,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+    return
+
+
+def create_paired_comparison_by_analysis_level_scatter_plots(combined_df, fig_path, analysis_level="analysis_type_label"):
+    sensor_characteristics = ["initial_bias"] #"bias_factor", "bias_drift_oscillations", "bias_drift_range_start", "bias_drift_range_end","noise_coefficient"]
+
+    outcome_metrics=["LBGI","HBGI","DKAI"]
+
+    comparison_types = [" Ratio"] #[" Difference",
+
+    combined_df = combined_df.sort_values(by=["bg_test_condition_label_icgm"])
+
+    analysis_level_unique_values = combined_df[analysis_level+"_icgm"].unique()
+
+    #Create a plot for each of the sensor characteristics specified
+    for comparison_type in comparison_types:
+        for sensor_characteristic in sensor_characteristics:
+            n_cols = len(outcome_metrics)
+            n_rows = len(analysis_level_unique_values)
+            subplot_titles = []
+
+            for analysis_level_value in analysis_level_unique_values:
+                for metric in outcome_metrics:
+                    if analysis_level == "bg_test_condition":
+                        subplot_titles.append("BG Test Condition " + str(analysis_level_value) + ", " + metric + comparison_type)
+                    else:
+                        subplot_titles.append(str(analysis_level_value)+", "+metric+comparison_type)
+
+            fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=subplot_titles, horizontal_spacing=0.1)
+
+            for i, analysis_level_value in enumerate(analysis_level_unique_values):
+                for j, metric in enumerate(outcome_metrics):
+
+                    df = combined_df[combined_df[analysis_level+"_icgm"] == analysis_level_value]
+                    print(df[[sensor_characteristic+"_icgm", metric + comparison_type]])
+
+                    fig.add_trace(go.Scatter(x=df[sensor_characteristic+"_icgm"],
+                                             y=df[metric + comparison_type],
+                                             customdata=df["filename_icgm"],
+                                             mode='markers',
+                                             marker=dict(size=4, opacity=.6),
+                                             showlegend=False),
+                                  row=i + 1,
+                                  col=j + 1)
+
+            y_columns = [metric + comparison_type for metric in outcome_metrics]
+            y_max_value = max(combined_df[y_columns])
+            x_max_value = max(combined_df[sensor_characteristic+"_icgm"])
+            x_min_value = min(combined_df[sensor_characteristic+"_icgm"])
+
+            analysis_level_dict = {"bg_test_condition_label":"BG Test Condition", "analysis_type_label": "Analysis Type"}
+
+            fig.update_layout(
+                title="Outcome Metric " + comparison_type + ": Baseline vs. iCGM Sensors<br>By " + analysis_level_dict[analysis_level],
+                legend_title="Risk Scores",
+                showlegend=True,
+                font_size=6
+            )
+
+            sensor_characteristics_dict = {"sensor_num": "iCGM Sensor Number",
+                         'initial_bias': 'Initial Bias',
+                         'bias_factor': 'Bias Factor',
+                         'bias_drift_oscillations': 'Bias Factor Oscillations',
+                         "bias_drift_range_start": 'Bias Drift Range Start',
+                         "bias_drift_range_end": 'Bias Drift Range End',
+                         "noise_coefficient": 'Noise Coefficient'}
+
+            fig.update_yaxes(range=[0, 200])
+
+            fig.update_xaxes(title=sensor_characteristics_dict[sensor_characteristic], range=[x_min_value, x_max_value])
+
+            for i in fig['layout']['annotations']:
+                i['font'] = dict(size=7)
+
+            save_view_fig(
+                fig,
+                image_type="png",
+                figure_name="distribution_"+comparison_type + "_" + analysis_level + "_sensor_characteristic"+ "_pairwise_comparison_scatter",
+                analysis_name="icgm-sensitivity-analysis",
+                view_fig=False,
+                save_fig=True,
+                save_fig_path=fig_path,
+                width=200 * n_cols,
+                height=200 * n_rows,
+            )
+
+    return
+
+
+def create_paired_comparison_by_sensor_scatter_plots(combined_df, fig_path):
+    graph_metrics = ["LBGI", "DKAI", "HBGI", "BGRI"]
+    n_rows = 5
+    n_cols = 6
+    subplot_titles = []
+
+    for i in range(n_rows):
+        for j in range(n_cols):
+            sensor_num = i * n_cols + j
+            subplot_titles.append("Sensor " + str(sensor_num))
+
+    for metric in graph_metrics:
+        fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=subplot_titles, horizontal_spacing=0.05)
+        max_value = max(max(combined_df[metric + "_baseline"]), max(combined_df[metric + "_icgm"])) + 2
+
+        fill_color_dict = {
+            "0 - None": "rgba(15, 115, 198, 0.2)",
+            "1 - Negligible": "rgba(6, 180, 6, 0.2)",
+            "2 - Minor": "rgba(208, 192, 127, 0.2)",
+            "3 - Serious": "rgba(225, 131, 37, 0.2)",
+            "4 - Critical": "rgba(154, 58, 57, 0.2)",
+        }
+
+        for i in range(n_rows):
+            for j in range(n_cols):
+
+                # Add in risk score lines for LBGI and HBGI
+                if metric in ["LBGI", "DKAI"]:
+
+                    if (i == 0) & (j == 0):
+                        show_legend = True
+                    else:
+                        show_legend = False
+
+                    if metric == "LBGI":
+                        thresholds = [0, 2.5, 2.5, 5, max_value]
+
+                    elif metric == "DKAI":
+                        thresholds = [2, 6, 8, 5, max_value]
+
+                    risk_levels = ["0 - None", "1 - Negligible", "2 - Minor", "3 - Serious", "4 - Critical"]
+
+                    for risk_level, threshold in zip(risk_levels, thresholds):
+                        fig.add_trace(go.Scatter(
+                            x=[0, max_value],
+                            y=[threshold, threshold],
+                            hoverinfo='skip',
+                            name=risk_level,
+                            mode='lines',
+                            fillcolor=fill_color_dict[risk_level],
+                            line=dict(width=0.5, color=fill_color_dict[risk_level]),
+                            showlegend=show_legend,
+                            stackgroup='one'),
+                            row=i + 1,
+                            col=j + 1)
+
+                # Filter the dataset for the particular sensor
+                sensor_num = i * n_cols + j
+                df = combined_df[combined_df["sensor_num_icgm"] == sensor_num]
+                df["hovertext"] = df["filename_icgm"] + "<br>Baseline: " + df[metric + "_baseline"].astype(str) + \
+                                  "<br>iCGM: " + df[metric + "_icgm"].astype(str) + "<br>iCGM Sensor Characteristics: " \
+                                                                                    "<br>Initial Bias: " + df[
+                                      "initial_bias_icgm"].astype(str) + "<br>Bias Factor: " + \
+                                  df["bias_factor_icgm"].astype(str) + "<br>Bias Drift Oscillations: " + df[
+                                      "bias_drift_oscillations_icgm"].astype(str) \
+                                  + "<br>Bias Drift Range Start: " + df["bias_drift_range_start_icgm"].astype(str) \
+                                  + "<br>Bias Drift Range End: " + df["bias_drift_range_end_icgm"].astype(str) \
+                                  + "<br>Noise Coefficient: " + df["noise_coefficient_icgm"].astype(str)
+
+                if metric in ["LBGI", "DKAI"]:
+                    marker_dict = dict(color="gray", size=5, opacity=.6)
+                else:
+                    marker_dict = dict(size=5, opacity=.6, color="gray")
+
+                fig.add_trace(go.Scatter(name="Sensor " + str(sensor_num),
+                                         x=df[metric + "_baseline"],
+                                         y=df[metric + "_icgm"],
+                                         customdata=df["filename_icgm"],
+                                         hovertext=df["hovertext"],
+                                         mode='markers',
+                                         showlegend=False,
+                                         marker=marker_dict),
+                              row=i + 1,
+                              col=j + 1)
+
+                fig.add_trace(go.Scatter(x=[0, max_value],
+                                         y=[0, max_value],
+                                         mode='lines',
+                                         showlegend=False,
+                                         opacity=.4,
+                                         line=dict(width=1, color="black")),
+                              row=i + 1,
+                              col=j + 1)
+
+        fig.update_layout(
+            title=metric + ": Baseline vs. iCGM Sensors",
+            legend_title="Risk Scores",
+            showlegend=True,
+            font_size=8
+        )
+
+        fig.update_yaxes(title="iCGM", range=[0, max_value])
+
+        fig.update_xaxes(title="Baseline", range=[0, max_value])
+
+        for i in fig['layout']['annotations']:
+            i['font'] = dict(size=10)
+
+        save_view_fig(
+            fig,
+            image_type="png",
+            figure_name=metric + "_pairwise_comparison_scatter",
+            analysis_name="icgm-sensitivity-analysis",
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path,
+            width=200 * n_cols,
+            height=200 * n_rows,
+        )
+
+    return
+
+
+def create_visualization_simulations_changed_rs(df):
+    animation_filenames = df.loc[(df['DKAI Risk Score_icgm'] > df['DKAI Risk Score_baseline']) , 'filename_icgm']
+                                # | ((df['LBGI Risk Score_icgm'] > df['LBGI Risk Score_baseline'])& (df['LBGI Risk Score_icgm']>1)) , 'filename_icgm']
+
+
+    #animation_filenames = ["vp12.bg9.s1.correction_bolus.csv"]
+
+    print(len(animation_filenames))
+
+    for i, filename in enumerate(animation_filenames):
+
+        print(i, filename)
+
+        baseline_filename = df.loc[df['filename_icgm'] == filename, 'filename_baseline'].iloc[0]
+
+        icgm_DKAI_RS = df.loc[df['filename_icgm'] == filename, 'DKAI Risk Score_icgm'].iloc[0]
+        icgm_LBGI_RS = df.loc[df['filename_icgm'] == filename, 'LBGI Risk Score_icgm'].iloc[0]
+
+        baseline_DKAI_RS = df.loc[df['filename_icgm'] == filename, 'DKAI Risk Score_baseline'].iloc[0]
+        baseline_LBGI_RS = df.loc[df['filename_icgm'] == filename, 'LBGI Risk Score_baseline'].iloc[0]
+
+        icgm_path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
+        icgm_simulation_df = data_loading_and_preparation(os.path.join(icgm_path, filename))
+
+        baseline_path  = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-10-06-nogit")
+        baseline_simulation_df = data_loading_and_preparation(os.path.join(baseline_path, baseline_filename))
+
+        # List of dictionaries
+        traces = [{0: ["bg", "bg_sensor"], 1: ["sbr","temp_basal_sbr_if_nan"]}, {2: ["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]}]
+
+        max_basal = max(np.nanmax(baseline_simulation_df["sbr"]), np.nanmax(icgm_simulation_df["sbr"]), np.nanmax(baseline_simulation_df["temp_basal"]), np.nanmax(icgm_simulation_df["temp_basal"]))+.5
+        max_bg = max(np.nanmax(baseline_simulation_df["bg"]), np.nanmax(icgm_simulation_df["bg"]), np.nanmax(baseline_simulation_df["bg_sensor"]), np.nanmax(icgm_simulation_df["bg_sensor"]))+20
+        min_bg = min(np.nanmin(baseline_simulation_df["bg"]), np.nanmin(icgm_simulation_df["bg"]), np.nanmin(baseline_simulation_df["bg_sensor"]), np.nanmin(icgm_simulation_df["bg_sensor"]))-10
+
+        create_simulation_figure_plotly(
+            files_need_loaded=False,
+            data_frames=[icgm_simulation_df, baseline_simulation_df],
+            file_location=os.path.join("..", "..", "data", "processed"),
+            file_names=[filename, baseline_filename],
+            traces=traces,
+            show_legend=False,
+            subplots=4,
+            time_range=(0, 8),
+            subtitle="",
+            main_title="iCGM: DKAI RS " + str(icgm_DKAI_RS) + ", LBGI RS " + str(icgm_LBGI_RS) +
+                       "<br>Baseline: DKAI RS " + str(int(baseline_DKAI_RS)) + ", LBGI RS " + str(int(baseline_LBGI_RS)),
+            subplot_titles=[
+                "BG Values (iCGM)",
+                "Scheduled Basal Rate and Loop Decisions (iCGM)",
+                "BG Values (Baseline)",
+                "Scheduled Basal Rate and Loop Decisions (Baseline)",
+            ],
+            save_fig_path=os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-paired-comparison-figures","simulations_with_risk_score_change"),
+            figure_name="baseline_icgm_comparison_"+filename,
+            analysis_name="icgm_sensitivity_analysis",
+            animate=False,
+            custom_axes_ranges=[(min(50, min_bg), max(260,max_bg)), (0, max_basal), (min(50, min_bg), max(260,max_bg)), (0, max_basal)],
+            custom_tick_marks=[[54, 70, 140, 180, 250], np.arange(0, max_basal, .5), [54, 70, 140, 180, 250], + np.arange(0, max_basal, .5)],
+        )
 
 
 
-columns = [
-    "virtual_patient_num",
-    "age",
-    "ylw",
-    "CIR",
-    "ISF",
-    "SBR",
-    "bias_factor",
-    "bias_drift_oscillations",
-    "bias_drift_range_start",
-    "bias_drift_range_end",
-    "noise_coefficient",
-    "mard",
-    "mbe",
-    "bg_test_condition",
-    "analysis_type",
-    "LBGI",
-    "LBGI Risk Score",
-    "DKAI",
-    "DKAI Risk Score",
-    "HBGI"
-]
+        '''
+    for filename in animation_filenames: #[0:2]:
+
+        baseline_filenames.append(df.loc[df['filename_icgm'] == filename, 'filename_baseline'].iloc[0])
 
 
-results_df = pd.DataFrame(data, columns=columns)
-results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
+        DKAI_RS = df.loc[df['filename_icgm'] == filename, 'DKAI Risk Score_icgm'].iloc[0]
+        LBGI_RS = df.loc[df['filename_icgm'] == filename, 'LBGI Risk Score_icgm'].iloc[0]
 
 
-# rename the analysis types
-results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
-results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
+        path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
 
-print(results_df["bias_factor"].unique())
+        simulation_df = data_loading_and_preparation(os.path.join(path, filename))
+        
+        traces = [{0: ["bg", "bg_sensor"], 1: ["sbr", "temp_basal_sbr_if_nan"], 2: ["iob"]}]
+        
 
-########## DEFINE DICTIONARIES ###################
-# primarily for renaming
+        create_simulation_figure_plotly(
+            files_need_loaded=False,
+            data_frames=[simulation_df],
+            file_location=path,
+            file_names=[filename],
+            traces=traces,
+            subplots=3,
+            time_range=(0, 8),
+            main_title="<b>Example iCGM Simulation </b> DKAI RS: " + str(DKAI_RS) + ", LBGI RS:" + str(LBGI_RS),
+            subtitle=filename,
+            subplot_titles=[
+                "BG Values",
+                "Scheduled Basal Rate and Loop Decisions",
+                "Insulin-on-Board"
+            ],
+            save_fig_path=os.path.join("..", "..", "reports", "figures",
+                                       "icgm-sensitivity-paired-comparison-figures",
+                                       "simulations_with_risk_score_change"),
+            figure_name="animation_" + filename,
+            analysis_name="icgm_analysis",
+            animate=True,
+        )
+
+    for filename in baseline_filenames[0:10]:
+
+        DKAI_RS = df.loc[df['filename_baseline'] == filename, 'DKAI Risk Score_baseline'].iloc[0]
+        LBGI_RS = df.loc[df['filename_baseline'] == filename, 'LBGI Risk Score_baseline'].iloc[0]
+
+        path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-10-06-nogit")
+
+        simulation_df = data_loading_and_preparation(os.path.join(path, filename))
+
+        traces = [{0: ["bg", "bg_sensor"], 1: ["sbr", "temp_basal_sbr_if_nan"], 2: ["iob"]}]
+
+        create_simulation_figure_plotly(
+            files_need_loaded=False,
+            data_frames=[simulation_df],
+            file_location=path,
+            file_names=[filename],
+            traces=traces,
+            subplots=3,
+            time_range=(0, 8),
+            main_title="<b>Example Baseline Simulation </b> DKAI RS: " + str(DKAI_RS) + ", LBGI RS:" + str(LBGI_RS),
+            subtitle=filename,
+            subplot_titles=[
+                "BG Values",
+                "Scheduled Basal Rate and Loop Decisions",
+                "Insulin-on-Board"
+            ],
+            save_fig_path=os.path.join("..", "..", "reports", "figures",
+                                       "icgm-sensitivity-paired-comparison-figures",
+                                       "simulations_with_risk_score_change"),
+            figure_name="animation_" + filename,
+            analysis_name="icgm_analysis",
+            animate=True,
+        )
+    '''
+
+    return
+
+
+def create_sensor_characteristics_table(df, fig_path):
+    columns = ['sensor_num_icgm',
+               'initial_bias_icgm',
+               'bias_factor_icgm',
+               'bias_drift_oscillations_icgm',
+               "bias_drift_range_start_icgm",
+               "bias_drift_range_end_icgm",
+               "noise_coefficient_icgm"
+               ]
+    sensor_characteristics_df = df[columns].drop_duplicates()
+
+    sensor_characteristics_df =  sensor_characteristics_df.sort_values(by=["sensor_num_icgm"])
+
+    sensor_characteristics_df = sensor_characteristics_df.rename(columns={"sensor_num_icgm": "iCGM Sensor Number",
+                                                                 'initial_bias_icgm': 'Initial Bias',
+                                                                 'bias_factor_icgm': 'Bias Factor',
+                                                                 'bias_drift_oscillations_icgm': 'Bias Factor Oscillations',
+                                                                 "bias_drift_range_start_icgm": 'Bias Drift Range Start',
+                                                                 "bias_drift_range_end_icgm": 'Bias Drift Range End',
+                                                                 "noise_coefficient_icgm": 'Noise Coefficient'})
+
+    print(sensor_characteristics_df)
+
+    return
+
+def generate_all_results_figures(df, fig_path=os.path.join("..", "..", "reports", "figures")):
+    # Create Spearman Correlation Coefficient Table
+    spearman_correlation_table(df, save_fig_path=fig_path)
+
+    # Iterate through each metric and analysis_level category shown below and create boxplot
+    # figure with both log scale and linear scale.
+    metrics = ["LBGI", "DKAI"]
+    analysis_levels = ["bg_test_condition", "analysis_type", "all"]
+    y_axis_scales = ["log"]  # , "linear"]
+
+    for analysis_level, metric, axis_scale in itertools.product(
+            analysis_levels, metrics, y_axis_scales
+    ):
+        make_boxplot(
+            df,
+            figure_name="boxplot-" + analysis_level + "-" + metric,
+            analysis_name="icgm-sensitivity-analysis",
+            metric=metric,
+            level_of_analysis=analysis_level,
+            notched_boxplot=False,
+            y_scale_type=axis_scale,
+            image_type="png",
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+        """
+        make_histogram(
+            df,
+            figure_name="histogram-" + analysis_level + "-" + metric,
+            analysis_name="icgm-sensitivity-analysis",
+            metric=metric,
+            level_of_analysis=analysis_level,
+            image_type="png",
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+        """
+        make_distribution_table(
+            df,
+            table_name="distribution-table-" + analysis_level + "-" + metric,
+            analysis_name="icgm-sensitivity-analysis",
+            metric=metric,
+            level_of_analysis=analysis_level,
+            image_type="png",
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+    metrics = ["LBGI Risk Score", "DKAI Risk Score"]
+    analysis_levels = ["bg_test_condition", "analysis_type", "all"]
+
+    for analysis_level, metric in itertools.product(analysis_levels, metrics):
+        make_bubble_plot(
+            df,
+            image_type="png",
+            figure_name="bubbleplot-" + analysis_level + "-" + metric,
+            analysis_name="icgm-sensitivity-analysis",
+            metric=metric,
+            level_of_analysis=analysis_level,
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+    ########### SUMMARY TABLE #################
+
+    all_analyses_summary_df = prepare_results_for_summary_table(df)
+
+    # make table
+    make_table(
+        all_analyses_summary_df.reset_index(),
+        table_name="summary-risk-table",
+        analysis_name="icgm-sensitivity-analysis",
+        cell_header_height=[60],
+        cell_height=[30],
+        cell_width=[200, 150, 150, 150],
+        image_type="png",
+        view_fig=False,
+        save_fig=True,
+        save_fig_path=fig_path
+    )
+
+    ########### DEMOGRAPHICS TABLE #################
+
+    get_metadata_tables(df, fig_path=fig_path)
+
+    ########## CDF Plots #################
+
+    metrics = ["LBGI", "DKAI", "LBGI Risk Score", "DKAI Risk Score"]
+
+    for metric in metrics:
+        create_cdf(
+            data=df[metric],
+            title="CDF for " + metric,
+            image_type="png",
+            figure_name="cdf-" + metric,
+            analysis_name="icgm-sensitivity-analysis",
+            view_fig=False,
+            save_fig=True,
+            save_fig_path=fig_path
+        )
+
+    ########## Proportion/Frequency Tables #################
+
+    metrics = ["LBGI Risk Score", "DKAI Risk Score"]
+    analysis_levels = ["bg_test_condition", "analysis_type", "all"]
+
+    for analysis_level, metric in itertools.product(analysis_levels, metrics):
+        make_frequency_table(
+            df,
+            image_type="png",
+            table_name="frequency-table-" + metric + "-" + analysis_level,
+            analysis_name="icgm-sensitivity-analysis",
+            cell_header_height=[30],
+            cell_height=[30],
+            cell_width=[250, 130, 135, 120, 120, 120],
+            metric=metric,
+            level_of_analysis=analysis_level,
+            view_fig=False,
+            save_fig=True,
+            save_csv=True,
+            save_fig_path=fig_path
+        )
+        return
+
+
+def create_data_frame_for_figures(results_path, patient_characteristics_path=os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")):
+    for i, filename in enumerate(os.listdir(results_path)): #[0:100]):
+        if (filename.endswith(".csv")):
+            if int(filename.split(".")[0].replace("vp", "")) not in (14, 3, 31, 35, 97):  #Filter out the virtual patients outside of clinical bounds
+                print(i, filename)
+                simulation_df = pd.read_csv(os.path.join(results_path, filename))
+                filename_components = filename.split(".")
+
+                f = open(os.path.join(patient_characteristics_path, (filename_components[0] + ".json")), "r")
+                json_data = json.loads(f.read())
+                patient_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+
+                if filename_components[2] == "sIdealSensor":
+                    f = open(os.path.join(results_path, "sIdealSensor.json"), "r") #Add this file with the correct parameters
+                    json_data = json.loads(f.read())
+                else:
+                    f = open(os.path.join(results_path, (
+                                filename_components[0] + "." + filename_components[1] + "." + filename_components[2] + ".json")), "r")
+                    json_data = json.loads(f.read())
+                sensor_characteristics_df = pd.DataFrame(json_data, index=['i', ])
+
+                # Add in the data
+                data.append(get_data(filename, simulation_df, patient_characteristics_df, sensor_characteristics_df))
+
+    columns = [
+        "filename",
+        "virtual_patient_num",
+        "sensor_num",
+        "age",
+        "ylw",
+        "CIR",
+        "ISF",
+        "SBR",
+        "starting_bg",
+        "initial_bias",
+        "bias_factor",
+        "bias_drift_oscillations",
+        "bias_drift_range_start",
+        "bias_drift_range_end",
+        "noise_coefficient",
+        "mard",
+        "mbe",
+        "bg_test_condition",
+        "analysis_type",
+        "LBGI",
+        "LBGI Risk Score",
+        "DKAI",
+        "DKAI Risk Score",
+        "HBGI",
+        "BGRI",
+        "percent_lt_54"
+    ]
+
+    results_df = pd.DataFrame(data, columns=columns)
+    results_df.to_csv(path_or_buf=os.path.join("..", "..", "reports", "figures", folder_name + "_results_df.csv"),
+                      index=False)
+
+    results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
+
+    # rename the analysis types
+    results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
+    results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
+
+    results_df["analysis_type_label"] = results_df["analysis_type"].replace(
+        analysis_type_labels
+    )
+    results_df["bg_test_condition_label"] = results_df["bg_test_condition"].replace(
+        analysis_type_labels
+    )
+    results_df["DKAI Risk Score String"] = results_df["DKAI Risk Score"].replace(score_dict)
+    results_df["LBGI Risk Score String"] = results_df["LBGI Risk Score"].replace(score_dict)
+
+    return results_df
+
+########## DICTIONARIES ###################
 score_dict = {
     0: "0 - None",
     1: "1 - Negligible",
@@ -1403,168 +2259,49 @@ analysis_type_labels = {
     "temp_basal_only": "Temp Basal Only",
 }
 
-results_df["analysis_type_label"] = results_df["analysis_type"].replace(
-    analysis_type_labels
-)
-results_df["bg_test_condition_label"] = results_df["bg_test_condition"].replace(
-    analysis_type_labels
-)
-results_df["DKAI Risk Score String"] = results_df["DKAI Risk Score"].replace(score_dict)
-results_df["LBGI Risk Score String"] = results_df["LBGI Risk Score"].replace(score_dict)
-
 level_of_analysis_dict = {
     "all": "All Analyses",
     "analysis_type": "Analysis Type",
     "bg_test_condition": "BG Test Condition",
 }
 
+#### LOAD IN DATA #####
+
+# Load in the iCGM Data
+data = []
+folder_name = "icgm-sensitivity-analysis-results-2020-09-19-nogit"
+results_files_path = os.path.join("..", "..", "data", "processed", folder_name)
+results_save_fig_path = os.path.join("..", "..", "reports", "figures", "icgm-sensitivity-analysis-results-figures", folder_name)
+#icgm_results_df = create_data_frame_for_figures(results_path=results_files_path)
+
+# Load in the Ideal Sensor Data
+data = []
+folder_name = "icgm-sensitivity-analysis-results-2020-10-06-nogit"
+results_files_path = os.path.join("..", "..", "data", "processed", folder_name)
+
+#baseline_sensor_df = create_data_frame_for_figures(results_path=results_files_path)
+
+
 #### CREATE FIGURES #####
 
-#Check distributions
-for x, y in itertools.product(["CIR", "ISF", "SBR"], ["LBGI", "DKAI", "HBGI"]):
-    create_scatter(df=results_df, x_value=x, y_value=y)
+# Create all check distribution figures
+#generate_all_check_distribution_scatterplots(icgm_results_df, fig_path=save_fig_path)
 
-'''
-#Create Spearman Correlation Coefficient Table
-spearman_correlation_table(results_df)
-
-# Iterate through each metric and analysis_level category shown below and create boxplot
-# figure with both log scale and linear scale.
-metrics = ["LBGI", "DKAI"]
-analysis_levels = ["bg_test_condition", "analysis_type", "all"]
-y_axis_scales = ["log"]  # , "linear"]
-
-for analysis_level, metric, axis_scale in itertools.product(
-    analysis_levels, metrics, y_axis_scales
-):
-    make_boxplot(
-        results_df,
-        figure_name="boxplot-" + analysis_level + "-" + metric,
-        analysis_name="icgm-sensitivity-analysis",
-        metric=metric,
-        level_of_analysis=analysis_level,
-        notched_boxplot=False,
-        y_scale_type=axis_scale,
-        image_type="png",
-        view_fig=False,
-        save_fig=True,  # This is not working, need to figure out why
-    )
-
-    """
-    make_histogram(
-        results_df,
-        figure_name="histogram-" + analysis_level + "-" + metric,
-        analysis_name="icgm-sensitivity-analysis",
-        metric=metric,
-        level_of_analysis=analysis_level,
-        image_type="png",
-        view_fig=False,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-    )
-
-    """
-    make_distribution_table(
-        results_df,
-        table_name="distribution-table-" + analysis_level + "-" + metric,
-        analysis_name="icgm-sensitivity-analysis",
-        metric=metric,
-        level_of_analysis=analysis_level,
-        image_type="png",
-        view_fig=False,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-    )
+# Create all results figures from the baseline df
+#generate_all_results_figures(baseline_sensor_df, fig_path=results_save_fig_path)
 
 
-metrics = ["LBGI Risk Score", "DKAI Risk Score"]
-analysis_levels = ["bg_test_condition", "analysis_type", "all"]
-
-for analysis_level, metric in itertools.product(analysis_levels, metrics):
-    make_bubble_plot(
-        results_df,
-        image_type="png",
-        figure_name="bubbleplot-" + analysis_level + "-" + metric,
-        analysis_name="icgm-sensitivity-analysis",
-        metric=metric,
-        level_of_analysis=analysis_level,
-        view_fig=False,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-    )
-
-########### SUMMARY TABLE #################
-
-all_analyses_summary_df = prepare_results_for_summary_table(results_df)
-
-# make table
-make_table(
-    all_analyses_summary_df.reset_index(),
-    table_name="summary-risk-table",
-    analysis_name="icgm-sensitivity-analysis",
-    cell_header_height=[60],
-    cell_height=[30],
-    cell_width=[200, 150, 150, 150],
-    image_type="png",
-    view_fig=False,
-    save_fig=True,
-)
+# Create all results figures from the results data frame
+#generate_all_results_figures(icgm_results_df, fig_path=results_save_fig_path)
 
 
-########### DEMOGRAPHICS TABLE #################
-
-#sim_results_location = os.path.join("..", "..", "data", "processed")
-#simulation_file = "risk-sim-results-2020-04-13"
-#file_import_path = os.path.abspath(os.path.join(sim_results_location, simulation_file))
-#demographic_datapath = os.path.join(file_import_path + "-just-demographics-nogit.csv")
-#demographic_df = pd.read_csv(demographic_datapath, index_col=[0])
-#get_metadata_tables(demographic_df)
+# Create pairwise figures
+#run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df)
 
 
-
-get_metadata_tables(results_df)
-
-
-########## CDF Plots #################
+run_pairwise_comparison_test()
 
 
-metrics = ["LBGI", "DKAI", "LBGI Risk Score", "DKAI Risk Score"]
-
-for metric in metrics:
-    create_cdf(
-        data=results_df[metric],
-        title="CDF for " + metric,
-        image_type="png",
-        figure_name="cdf-" + metric,
-        analysis_name="icgm-sensitivity-analysis",
-        view_fig=False,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-    )
-
-
-########## Proportion/Frequency Tables #################
-
-metrics = ["LBGI Risk Score", "DKAI Risk Score"]
-analysis_levels = ["bg_test_condition", "analysis_type", "all"]
-
-for analysis_level, metric in itertools.product(analysis_levels, metrics):
-    make_frequency_table(
-        results_df,
-        image_type="png",
-        table_name="frequency-table-" + metric + "-" + analysis_level,
-        analysis_name="icgm-sensitivity-analysis",
-        cell_header_height=[30],
-        cell_height=[30],
-        cell_width=[250, 130, 135, 120, 120, 120],
-        metric=metric,
-        level_of_analysis=analysis_level,
-        view_fig=False,
-        save_fig=True,
-        save_csv=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-    )
-'''
 
 
 

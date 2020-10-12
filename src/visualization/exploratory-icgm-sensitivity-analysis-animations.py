@@ -3,18 +3,18 @@ import os
 import pandas as pd
 
 import tarfile
-from icgm_sensitivity_analysis_figures_and_tables import blood_glucose_risk_index, lbgi_risk_score, dka_index, dka_risk_score
+
+# from icgm_sensitivity_analysis_figures_and_tables import blood_glucose_risk_index, lbgi_risk_score, dka_index, dka_risk_score
 from risk_scenario_figures_plotly import create_simulation_figure_plotly
 from risk_scenario_figures_shared_functions import data_loading_and_preparation
 
 
-bg_test_condition_to_check="9"
-LBGI_RS_to_check=4
-DKAI_RS_to_check=0
-#animation_filenames = ['icgm-sensitivity-analysis-results-2020-07-12/vp9.bg2.s15.temp_basal_only.csv']
+bg_test_condition_to_check = "9"
+LBGI_RS_to_check = 4
+DKAI_RS_to_check = 0
 
-#Uncomment if trying to search for which filenames to show
-
+# Uncomment if trying to search for which filenames to show
+"""
 animation_filenames = [] 
 
 def get_data(filename, simulation_df):
@@ -63,18 +63,32 @@ results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
 results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
 
 print(animation_filenames)
+"""
+
+animation_filenames = [
+    "vp57.bg4.sIdealSensor.correction_bolus.csv",
+    "vp57.bg4.sIdealSensor.temp_basal_only.csv",
+    "vp13.bg1.sIdealSensor.temp_basal_only.csv",
+    "vp13.bg1.sIdealSensor.correction_bolus.csv",
+    "vp85.bg7.sIdealSensor.meal_bolus.csv",
+    "vp48.bg4.sIdealSensor.meal_bolus.csv",
+]
 
 
-#Show animation for the files
-for filename in animation_filenames[0:10]:
+# Show animation for the files
+for filename in animation_filenames:  # [0:10]:
 
-    path = os.path.join("..", "..", "data", "processed")
-    folder_name = "icgm-sensitivity-analysis-results-2020-09-19.tar.gz"
-    compressed_filestream = tarfile.open(os.path.join(path, folder_name))
+    path = os.path.join(
+        "..",
+        "..",
+        "data",
+        "processed",
+        "icgm-sensitivity-analysis-results-2020-10-01-nogit",
+    )
 
-    simulation_df = data_loading_and_preparation(compressed_filestream.extractfile(filename))
+    simulation_df = data_loading_and_preparation(os.path.join(path, filename))
 
-    traces = [{0: ["bg", "bg_sensor"], 1: ["sbr", "temp_basal_sbr_if_nan"], 2:["iob"]}]
+    traces = [{0: ["bg", "bg_sensor"], 1: ["sbr", "temp_basal_sbr_if_nan"], 2: ["iob"]}]
 
     print(simulation_df.columns)
 
@@ -89,14 +103,21 @@ for filename in animation_filenames[0:10]:
         subplots=3,
         time_range=(0, 8),
         main_title="<b>Example iCGM Simulation </b>",
-        subtitle="(LBGI Risk Score: " + str(LBGI_RS_to_check) + "; DKAI Risk Score: " + str(DKAI_RS_to_check) +")",
+        subtitle=filename,
         subplot_titles=[
             "BG Values",
             "Scheduled Basal Rate and Loop Decisions",
-            "Insulin-on-Board"
+            "Insulin-on-Board",
         ],
-        save_fig_path=os.path.join("..", "..", "reports", "figures","icgm_analysis_bg_test_condition_9","icgm_analysis-animation_icgm-sensitivity-analysis-results-2020-09-17"),
-        figure_name="animation_"+filename.split("/")[3],
+        save_fig_path=os.path.join(
+            "..",
+            "..",
+            "reports",
+            "figures",
+            "icgm-sensitivity-analysis-outlier-examples",
+            "icgm-sensitivity-analysis-results-2020-10-01",
+        ),
+        figure_name="animation_" + filename,
         analysis_name="icmg_analysis",
         animate=True,
     )
