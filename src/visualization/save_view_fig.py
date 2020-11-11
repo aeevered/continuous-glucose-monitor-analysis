@@ -26,6 +26,10 @@ def save_view_fig(
     )
 
     if save_fig:
+        if not os.path.exists(save_fig_path):
+            print("making directory " + save_fig_path + "...")
+            os.makedirs(save_fig_path)
+
         pio.write_image(
             fig=fig,
             file=os.path.join(save_fig_path, file_name + ".{}".format(image_type)),

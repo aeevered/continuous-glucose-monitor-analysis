@@ -3,7 +3,10 @@ import numpy as np
 
 
 def data_loading_and_preparation(filepath):
-    sim_df = pd.read_csv(filepath)
+    if filepath.endswith(".csv"):
+        sim_df = pd.read_csv(filepath)
+    elif filepath.endswith(".tsv"):
+        sim_df = pd.read_csv(filepath, sep="\t")
 
     sim_df = data_preparation(sim_df)
 

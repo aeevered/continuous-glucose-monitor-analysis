@@ -8,4 +8,5 @@ dependencies:
   - imagemagick
   - python=3.6
   - pip:
+      - git+git://github.com/tidepool-org/data-science-models
       - -r file:requirements.txt
