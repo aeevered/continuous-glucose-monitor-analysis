@@ -2,8 +2,7 @@
 
 #### -- Project Status: [Active]
 #### -- Project Disclaimer: This work is for [Exploration]
-
-## Project Objective
+ ## Project Objective
 The purpose of this project is to create visualizations for the risk simulation
 analyses.
 

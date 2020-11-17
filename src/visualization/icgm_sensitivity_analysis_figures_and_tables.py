@@ -235,7 +235,7 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
         filename.split(".")[0]
     )
     age = simulation_characteristics_json_data["controller"]["config"]["age"]
-    ylw = simulation_characteristics_json_data["controller"]["config"]["age"]
+    ylw = simulation_characteristics_json_data["controller"]["config"]["ylw"]
     cir = simulation_characteristics_json_data["patient"]["config"][
         "carb_ratio_schedule"
     ]["schedule"][0]["setting"]
@@ -1726,15 +1726,15 @@ def run_pairwise_comparison_figures(save_fig_folder_name):
     # create_paired_comparison_box_plots(combined_df, fig_path=fig_path)
 
     # Make Paired Comparison Scatter Plot
-    # create_paired_comparison_scatter_plots(
-    #     combined_df,
-    #     fig_path=os.path.join(fig_path, "distributions-sensor-characteristic-outcome"),
-    # )
+    create_paired_comparison_scatter_plots(
+        combined_df,
+        fig_path=os.path.join(fig_path, "distributions-sensor-characteristic-outcome"),
+    )
 
     # Generate crosstab of risk scores
-    # create_table_paired_risk_score_bins(
-    #    combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
-    # )
+    create_table_paired_risk_score_bins(
+       combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
+    )
 
     create_sensor_characteristic_scatters(
         combined_df, fig_path=os.path.join(fig_path, "sensor_characteristic_distributions")
@@ -2234,8 +2234,6 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
         "drift_multiplier_end_icgm",
         "noise_max_icgm",
     ]
-
-    sensor_characteristics = ["bias_norm_factor_icgm", "bias_factor_icgm"]
 
     for comparison_type, outcome_metric, sensor_characteristic in itertools.product(
         comparison_types, outcome_metrics, sensor_characteristics
@@ -3251,7 +3249,7 @@ baseline_files_path = os.path.join(
 #     results_folder_name=ideal_sensor_folder_name,
 # )
 
-# If want to load in the ideal sensors again, otherwise use line above
+# If want to load in the ideal sensors again, otherwise use above
 # baseline_sensor_df = pd.read_csv(os.path.join(save_path, ideal_sensor_folder_name + "_results_df.csv"))
 
 #### CREATE FIGURES #####
@@ -3263,13 +3261,14 @@ baseline_files_path = os.path.join(
 # generate_all_results_figures(baseline_sensor_df, fig_path=results_save_fig_path)
 
 
-# Create all results figures (not pairwise) from the results data frame
-# generate_all_results_figures(icgm_results_df, fig_path=results_save_fig_path)
 
+# Create all results figures (not pairwise) from the results data frame
+icgm_results_df = pd.read_csv(os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv"))
+generate_all_results_figures(icgm_results_df, fig_path=results_save_fig_path)
 
 # Create pairwise figures
 #run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df, save_fig_folder_name=save_fig_folder_name)
-run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
+#run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
 
 ########### Run some visualizations of specific scenario examples ###########
 
