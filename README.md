@@ -1,20 +1,25 @@
-# [Explore Risk ]
+# Figures for Data Science Risk Analyses
 
 #### -- Project Status: [Active]
 #### -- Project Disclaimer: This work is for [Exploration]
  ## Project Objective
-The purpose of this project is to create visualizations for the risk simulation
-analyses.
+The purpose of this project is to create visualizations for exploratory analysis of Tidepool Data Science
+Team risk analyses. This includes:
+- Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
+- iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
+- Replay Loop Analyses (replay-loop-animations.py)
 
 ## Definition of Done
-This phase of the project will be done when figures are approved and moved to a more
-permanent (non-exploratory) repository.
+This phase of the project will be done when exploratory analysis for these projects is completed and final figures are 
+approved. This project can then become a more permanent (non-exploratory) repository for final report figures.
 
 ## Project Description
-This project is for exploring different figures for
-https://tidepool.atlassian.net/browse/DATA-260. See Jira card for additional
-context and project steps.
+This project is for creating different figures for exploratory analysis 
 
+This includes:
+- Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
+- iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
+- Replay Loop Analyses (replay-loop-animations.py)
 
 ### Technologies (Update this list)
 * Python (99% of the time)
@@ -58,7 +63,8 @@ This may also make it easier to convert existing packages into pypi packages. We
 in conda using the conda-environment.yml file when packages are not available via pip (e.g., R and plotly-orca).
 
 ## Getting Started with this project
-1. Raw Data is being kept [here](https://drive.google.com/file/d/1N38IkCwox8SRm2dmI35lr72gbmrQztVp/view?usp=sharing).
+1. Raw Data is being kept:
+    - [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
 
 ## Contributing Guide
 1. All are welcome to contribute to this project.
@@ -82,33 +88,4 @@ NOTE: PHI data is never stored in github and the .gitignore file includes this r
 |[Ed Nykaza](https://github.com/[ed-nykaza])| @ed        |
 |[Jason Meno](https://github.com/[jameno]) |  @jason    |
 |[Cameron Summers](https://github.com/[scaubrey]) |  @Cameron Summers    |
-
-## Known TODO items
-- [ ] automate the process of finding all of the the TODO: comments in the code and put link here.
-
-## Initial Setup Checklist
-
-## New Repo Checklist & Instructions
-- [ ] Update repo settings in github (manual process)
-    * [x] Update **Settings/Options/Repository name**
-        * Name follows the `<team (optional)> - <type(optional)> - <one-to-three-word-description> - <initials (optional)>` in `lowercase-dash-format`.
-    Examples:
-        * `icgm-sensitivity-analysis` is used by all of Tidepool so no team is needed and is considered production code so no type is needed.
-        * `data-scence-donor-data-pipeline` is only used by Data Science
-        * `data-science-template-repository` is a template (type) used by Data Science Team
-        * `data-science-explore-<short-description>` type of work is exploratory
-        * `data-science-explore-<short-description>-etn` exploratory solo work has initials at the end
-    * [x] Update **Settings/Options/Manage access**
-        - [x] Invite data-science-admins team and give admin access
-        - [x] Invite Data Science team and give write access
-    * [x] Update **Settings/Options/Manage access/Branch protection rules**
-        - [x] Set _Branch name pattern_ to `master`
-        - [x] Check _Require pull request reviews before merging_
-        - [x] Set _Required approving reivews:_ to 1 for non-production code and 2 for production code
-        - [x] Check _Dismiss stale pull request approvals when new commits are pushed_
-        - [ ] TODO: add in travis ci instructions via _Require status checks to pass before merging_
-- [x] Fill in this readme. Everything in [  ]'s should be changed and/or filled in.
-- [x] After completing this checklist, move the completed checklist to the bottom of the readme
-- [x] Delete everything above the [Project Name]
-
-
+|[Anne Evered](https://github.com/[aeevered]) |  @anne    |

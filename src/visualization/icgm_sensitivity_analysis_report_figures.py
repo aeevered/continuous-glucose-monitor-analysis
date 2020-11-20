@@ -23,13 +23,18 @@ from risk_scenario_figures_shared_functions import data_loading_and_preparation
 
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 
-# Calculate MBE and MARD (https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py)
+#Todo: Update to use MARD and MBE functions from icgm-sensitivity-analysis or from data-science-metrics
+#Reference: https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py
+
 def add_error_fields(df):
+    """
+
+    :param df: data
+    :return:
+    """
     # default icgm and ysi ranges [40, 400] and [0, 900]
     sensor_bg_range = (40, 400)
-    bg_range = (0, 900)
     sensor_min, sensor_max = sensor_bg_range
-    bg_min, bg_max = bg_range
 
     # calculate the icgm error (difference and percentage)
     sensor_bg_values = df["bg_sensor"].values
