@@ -17,10 +17,14 @@ import datetime as dt
 def create_insulin_pulse_animation(file_location, filename):
     """
 
+    Creates an animation in matplotlib to visualize missed insulin pulses analysis.
+
     Parameters
     ----------
-    file_location
-    filename
+    file_location: str
+        location of files to show in animation
+    filename: str
+        name of file to show in animation
 
     Returns
     -------
@@ -248,7 +252,22 @@ def create_insulin_pulse_animation(file_location, filename):
         "insulin-pulses-analysis", "animation", filename, utc_string, code_version
     )
 
-    animation.save(animation_file_name + ".gif", writer="imagemagick", fps=5, dpi=100)
+    # Path to save figure at
+    save_fig_path = os.path.join(
+        "..",
+        "..",
+        "reports",
+        "figures",
+        "insulin-pulses-risk-assessment",
+        "animations"
+    )
+
+    # Make path if it doesn't exist yet
+    if not os.path.exists(save_fig_path):
+        print("making directory " + save_fig_path + "...")
+        os.makedirs(save_fig_path)
+
+    animation.save(os.path.join(save_fig_path, animation_file_name + ".gif"), writer="imagemagick", fps=5, dpi=100)
 
 
 # TODO: split above into additional functions

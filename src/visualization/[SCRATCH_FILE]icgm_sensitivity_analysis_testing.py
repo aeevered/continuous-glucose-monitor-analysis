@@ -13,7 +13,6 @@ bg_greater_thousand = []
 
 results_path = os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-results-2020-09-19-nogit")
 
-
 for i, filename in enumerate(os.listdir(results_path)[0:0]):
     if filename.endswith(".csv"):
         print(i, filename)
