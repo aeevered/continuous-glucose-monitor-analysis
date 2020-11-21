@@ -6,12 +6,11 @@ import plotly.graph_objects as go
 import plotly.express as px
 import datetime as dt
 import itertools
-from save_view_fig import save_view_fig
+from src.visualization.save_view_fig import save_view_fig
 import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
-from risk_scenario_figures_plotly import create_simulation_figure_plotly
-from risk_scenario_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 
 # from tidepool_data_science_models.models.icgm_sensor_generator_functions import (
 #     calc_mard,

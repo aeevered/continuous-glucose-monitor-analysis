@@ -1,18 +1,23 @@
-import plotly
+__author__ = "Anne Evered"
+
+
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 import os
-from save_view_fig import save_view_fig, save_animation
-from risk_scenario_figures_shared_functions import (
+from src.visualization.save_view_fig import save_view_fig, save_animation
+from src.visualization.simulation_figures_shared_functions import (
     data_loading_and_preparation,
     get_features_dictionary,
 )
 
-# reference: https://chart-studio.plotly.com/~empet/15243/animating-traces-in-subplotsbr/#/
+# For more examples of animation in plotly please see this reference:
+# https://chart-studio.plotly.com/~empet/15243/animating-traces-in-subplotsbr/#/
 
 
 def add_plot(fig, df, field, row):
+
+    # Get the features dictionary for the particular field adding to the plot
     features_dictionary = get_features_dictionary(field)
 
     fig.add_trace(
@@ -328,8 +333,8 @@ def create_simulation_figure_plotly(
 
     return
 
-
 """
+
 file_location = os.path.join("..", "..", "data", "processed")
 loop_filename = "risk_scenarios_PyLoopkit v0.1.csv"
 no_loop_filename = "risk_scenarios_do_nothing.csv"

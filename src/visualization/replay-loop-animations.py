@@ -1,8 +1,7 @@
 import pandas as pd
 import os
-from risk_scenario_figures_shared_functions import data_preparation
-from risk_scenario_figures_plotly import create_simulation_figure_plotly
-import numpy as np
+from src.visualization.simulation_figures_shared_functions import data_preparation
+from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 
 file_location = os.path.join("..", "..", "data", "processed")
 filename = "loop_replay-nogit.csv"

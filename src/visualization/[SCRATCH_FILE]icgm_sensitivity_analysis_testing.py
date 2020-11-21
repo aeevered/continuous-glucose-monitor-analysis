@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 import json
-from save_view_fig import save_view_fig
+from src.visualization.save_view_fig import save_view_fig
 
 #### Look for suspect results files ####
 

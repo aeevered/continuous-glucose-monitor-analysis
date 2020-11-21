@@ -2,8 +2,8 @@ __author__ = "Anne Evered"
 
 # This file contains functions that are used in both the plotly and matplotlib
 # versions of simulation figure/animation.
-# plotly version: risk_scenario_figures_plotly.py
-# matplotlib version: risk_scenario_figures_matplotlib.py
+# plotly version: simulation_figure_plotly.py
+# matplotlib version: simulation_figure_matplotlib.py
 
 # %% REQUIRED LIBRARIES
 import pandas as pd

@@ -5,8 +5,8 @@ import pandas as pd
 import tarfile
 
 # from icgm_sensitivity_analysis_figures_and_tables import blood_glucose_risk_index, lbgi_risk_score, dka_index, dka_risk_score
-from risk_scenario_figures_plotly import create_simulation_figure_plotly
-from risk_scenario_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 
 
 bg_test_condition_to_check = "9"

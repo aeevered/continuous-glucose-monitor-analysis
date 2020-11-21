@@ -2,21 +2,17 @@
 import os
 import pandas as pd
 import numpy as np
-import warnings
 import plotly.graph_objects as go
 import plotly.express as px
-from plotly.offline import plot
-import plotly.io as pio
 import datetime as dt
 import itertools
-from save_view_fig import save_view_fig
-import tarfile
+from src.visualization.save_view_fig import save_view_fig
 import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
 from plotly.subplots import make_subplots
-from risk_scenario_figures_plotly import create_simulation_figure_plotly
-from risk_scenario_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 import plotly.figure_factory as ff
 
 # from tidepool_data_science_models.models.icgm_sensor_generator_functions import (

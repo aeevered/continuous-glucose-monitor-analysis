@@ -5,7 +5,7 @@ import os
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from save_view_fig import save_view_fig
+from src.visualization.save_view_fig import save_view_fig
 
 # Read in data file
 insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "2020-07-02")
