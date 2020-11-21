@@ -5,10 +5,10 @@ import os
 import plotly.express as px
 
 insulin_pulse_file_location = os.path.join(
-    "..", "..", "data", "raw", "2020-06-30_wPyloopkit_Update"
+    "..", "..", "data", "raw", "2020-07-02"
 )
 
-filename = "SBR 0.1 VPBR 0.1 MBR 0.2.csv"
+filename = "2020-07-02-06-41-20-SBR 0.1 VPBR 0.1 MBR 0.2.csv"
 
 simulation_example_path = os.path.abspath(
     os.path.join(insulin_pulse_file_location, filename)
