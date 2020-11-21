@@ -1,3 +1,5 @@
+__author__ = "Anne Evered"
+
 # %% REQUIRED LIBRARIES
 import os
 import pandas as pd

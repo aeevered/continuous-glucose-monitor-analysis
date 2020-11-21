@@ -232,6 +232,7 @@ def create_simulation_figure_plotly(
         the range of hours of the simulation want to show (i.e. (0, 8) for
         8 hours starting at t=0
     main_title: str
+        main title for the figure
     subplot_titles: list of strings
         list of subplot titles
     save_fig_path: str

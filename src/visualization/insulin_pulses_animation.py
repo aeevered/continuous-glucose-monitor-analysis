@@ -1,3 +1,5 @@
+__author__ = "Anne Evered"
+
 # %% REQUIRED LIBRARIES
 import numpy as np
 import os
@@ -10,8 +12,20 @@ import datetime as dt
 # This script depends on imagemagick (for saving image). You can download imagemagick here:
 # http://www.imagemagick.org/script/download.php
 
+
 # Create figure
 def create_insulin_pulse_animation(file_location, filename):
+    """
+
+    Parameters
+    ----------
+    file_location
+    filename
+
+    Returns
+    -------
+
+    """
 
     # Load in data
     simulation_example_path = os.path.abspath(os.path.join(file_location, filename))
@@ -230,11 +244,6 @@ def create_insulin_pulse_animation(file_location, filename):
     utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
     code_version = "v0-1-0"
 
-    # TODO: get to correct filepath location
-    # filepath = os.path.join(
-    # "..", "..", "reports", "figures", "2020-06-30_wPyloopkit_Update"
-    # )
-
     animation_file_name = "{}-{}_{}_{}_{}".format(
         "insulin-pulses-analysis", "animation", filename, utc_string, code_version
     )
@@ -242,20 +251,24 @@ def create_insulin_pulse_animation(file_location, filename):
     animation.save(animation_file_name + ".gif", writer="imagemagick", fps=5, dpi=100)
 
 
-# %%
 # TODO: split above into additional functions
 # TODO: add in parameters for saving and viewing fig
+# ^ Note: this has been done in generalized version of this animation code
+# simulation_figure_matplotlib.py. This is older code that predates simulation_figure_matplotlib.py.
 
-# Create Figures
-insulin_pulse_file_location = os.path.join(
-    "..", "..", "data", "raw", "2020-06-30_wPyloopkit_Update"
-)
 
-filename = "SBR 0.1 VPBR 0.1 MBR 0.2.csv"
-create_insulin_pulse_animation(insulin_pulse_file_location, filename)
+if __name__ == '__main__':
 
-filename = "SBR 0.05 VPBR 0.05 MBR 0.1.csv"
-create_insulin_pulse_animation(insulin_pulse_file_location, filename)
+    # Create Figures
+    insulin_pulse_file_location = os.path.join(
+        "..", "..", "data", "raw", "insulin-pulses-sample-files-2020-07-02"
+    )
 
-filename = "SBR 0.05 VPBR 0.05 MBR 0.25.csv"
-create_insulin_pulse_animation(insulin_pulse_file_location, filename)
+    filename = "2020-07-02-06-41-20-SBR 0.1 VPBR 0.1 MBR 0.2.csv"
+    create_insulin_pulse_animation(insulin_pulse_file_location, filename)
+
+    filename = "2020-07-02-06-41-20-SBR 0.05 VPBR 0.05 MBR 0.1.csv"
+    create_insulin_pulse_animation(insulin_pulse_file_location, filename)
+
+    filename = "2020-07-02-06-41-20-SBR 0.05 VPBR 0.05 MBR 0.25.csv"
+    create_insulin_pulse_animation(insulin_pulse_file_location, filename)
