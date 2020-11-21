@@ -1,11 +1,21 @@
+__author__ = "Anne Evered"
+
+# %% REQUIRED LIBRARIES
 import pandas as pd
 import os
 from src.visualization.simulation_figures_shared_functions import data_preparation
 from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 
-file_location = os.path.join("..", "..", "data", "processed")
+# This script uses the plotly versions of simulation output animation/figure
+# to explore how we might visualize "replay loop" that Eden (edengh) was working on.
+#
+# This work is currently in exploratory stage.
+
+# Specify file location and filename
+file_location = os.path.join("..", "..", "data", "raw")
 filename = "loop_replay-nogit.csv"
 
+# Create dataframe and respecify some of the columns so do not have duplicate or ambiguous column names
 replay_loop_df = pd.read_csv(os.path.abspath(os.path.join(file_location, filename)))
 replay_loop_df.rename(
     columns={
@@ -16,7 +26,8 @@ replay_loop_df.rename(
 )
 replay_loop_df = data_preparation(replay_loop_df)
 
-print(replay_loop_df[replay_loop_df["reported_bolus"] != 0]["reported_bolus"])
+# Example where the plot is showing bg as first subplot and the sbr/bolus information for pyloopkit
+# as the second subplot and the sbr/bolus information for pyloopkit as the third subplot
 
 traces = [
     {
@@ -25,7 +36,6 @@ traces = [
         2: ["sbr", "suggested_bolus", "pyloopkit_temp_basal_sbr_if_nan"],
     }
 ]
-
 
 create_simulation_figure_plotly(
     files_need_loaded=False,
@@ -42,11 +52,14 @@ create_simulation_figure_plotly(
         "Insulin Given (as shown in Jaeb Data)",
         "Insulin Suggested (from PyLoopKit and Bolus Recommendation Tool)",
     ],
-    save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),
+    save_fig_path=os.path.join("..", "..", "reports", "figures", "replay_loop_animation_examples"),
     figure_name="plotly_simulation_figure",
-    analysis_name="risk_scenarios",
+    analysis_name="replay_loop",
     animate=True,
 )
+
+# Example where the plot is showing bg as first subplot and  then sbr information for both pyloopkit
+# and jaeb as the second and the bolus information for pyloopkit and jaeb as the third
 
 traces = [
     {
@@ -71,8 +84,8 @@ create_simulation_figure_plotly(
         "Basal Insulin Given (Jaeb) vs. Suggested (PyLoopKit)",
         "Bolus Reported (Jaeb) vs. Suggested (Bolus Recommendation Tool)",
     ],
-    save_fig_path=os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios"),
+    save_fig_path=os.path.join("..", "..", "reports", "figures", "replay_loop_animation_examples"),
     figure_name="plotly_simulation_figure",
-    analysis_name="risk_scenarios",
+    analysis_name="replay_loop",
     animate=True,
 )

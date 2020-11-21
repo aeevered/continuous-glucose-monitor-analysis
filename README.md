@@ -3,8 +3,9 @@
 #### -- Project Status: [Active]
 #### -- Project Disclaimer: This work is for [Exploration]
  ## Project Objective
-The purpose of this project is to create visualizations for exploratory analysis of Tidepool Data Science
-Team risk analyses. This includes:
+The purpose of this project is to create figures, tables, and animation for exploratory analysis of Tidepool Data Science
+Team risk analyses results. 
+ This includes:
 - Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
 - iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
 - Replay Loop Analyses (replay-loop-animations.py)
@@ -65,6 +66,9 @@ in conda using the conda-environment.yml file when packages are not available vi
 ## Getting Started with this project
 1. Raw Data is being kept:
     - [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
+    - All other data 
+    loop_replay-nogit.csv for replay_loop_exploratory_figure_examples.py
+    risk_scenarios_do_nothing.csv and risk_scenarios_PyLoopkit v0.1.csv for simulation_figures_demo_examples.py
 
 ## Contributing Guide
 1. All are welcome to contribute to this project.

@@ -1126,7 +1126,7 @@ def visualize_individual_sim_result(df, icgm_path, baseline_path, save_fig_path,
         create_simulation_figure_plotly(
             files_need_loaded=False,
             data_frames=[icgm_simulation_df, baseline_simulation_df],
-            file_location=os.path.join("..", "..", "data", "processed"),
+            file_location=os.path.join("..", "..", "data", "raw"),
             file_names=[filename, baseline_filename],
             traces=traces,
             show_legend=False,
@@ -1384,7 +1384,7 @@ level_of_analysis_dict = {
 # Load in the iCGM Data
 data = []
 icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
-results_files_path = os.path.join("..", "..", "data", "processed", icgm_folder_name)
+results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
 
 # Set where to save figures
 save_fig_folder_name = icgm_folder_name
@@ -1422,7 +1422,7 @@ if not os.path.exists(results_save_fig_path):
 data = []
 ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
 baseline_files_path = os.path.join(
-    "..", "..", "data", "processed", ideal_sensor_folder_name
+    "..", "..", "data", "raw", ideal_sensor_folder_name
 )
 
 # baseline_sensor_df = create_data_frame_for_figures(

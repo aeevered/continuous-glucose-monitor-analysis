@@ -75,7 +75,7 @@ def outside_clinical_bounds(df):
     return False
 
 
-for i, scenario_filename in enumerate(os.listdir(scenarios_path))[0:0]):
+for i, scenario_filename in enumerate(os.listdir(scenarios_path)[0:0]):
     if scenario_filename.endswith(".csv"):
         print(i, scenario_filename)
         scenario_df = pd.read_csv(os.path.join(scenarios_path, scenario_filename))

@@ -2702,7 +2702,7 @@ def visualize_individual_sim_result(df, icgm_path, baseline_path, save_fig_path,
         create_simulation_figure_plotly(
             files_need_loaded=False,
             data_frames=[icgm_simulation_df, baseline_simulation_df],
-            file_location=os.path.join("..", "..", "data", "processed"),
+            file_location=os.path.join("..", "..", "data", "raw"),
             file_names=[filename, baseline_filename],
             traces=traces,
             show_legend=False,
@@ -2934,14 +2934,14 @@ def create_data_frame_for_figures(
         "..",
         "..",
         "data",
-        "processed",
+        "raw",
         "icgm-sensitivity-analysis-results-2020-09-19-nogit",
     ),
     is_baseline = False
 ):
     # scenarios_outside_clinical_bounds_df = pd.read_csv(
     #     os.path.join(
-    #         "..", "..", "data", "processed", "scenarios_outside_clinical_bounds.csv"
+    #         "..", "..", "data", "raw", "scenarios_outside_clinical_bounds.csv"
     #     )
     # )
     # vp_outside_clinical_bounds = list(
@@ -3117,7 +3117,7 @@ def create_data_frame_for_figures(
     results_df = pd.DataFrame(data, columns=columns)
 
     # Exclude scenarios that were found to not meet the special controls (leaving this code in case end up needing again)
-    # special_controls_pass_rate_df = pd.read_csv(os.path.join("..", "..", "data", "processed", "icgm-sensitivity-analysis-scenarios-2020-07-10-nogit", "percent_pass_per_scenario_icgm-sensitivity-analysis-scenarios-2020-07-10-nogit.csv"))
+    # special_controls_pass_rate_df = pd.read_csv(os.path.join("..", "..", "data", "raw", "icgm-sensitivity-analysis-scenarios-2020-07-10-nogit", "percent_pass_per_scenario_icgm-sensitivity-analysis-scenarios-2020-07-10-nogit.csv"))
     # scenarios_meeting_special_controls = special_controls_pass_rate_df[special_controls_pass_rate_df["percent_pass"] == 100]["training_scenario_filename"].unique()
 
     # print(results_df.shape)
@@ -3195,7 +3195,7 @@ level_of_analysis_dict = {
 # Load in the iCGM Data
 data = []
 icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
-results_files_path = os.path.join("..", "..", "data", "processed", icgm_folder_name)
+results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
 
 # Set where to save figures
 save_fig_folder_name = icgm_folder_name
@@ -3234,7 +3234,7 @@ if not os.path.exists(results_save_fig_path):
 data = []
 ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
 baseline_files_path = os.path.join(
-    "..", "..", "data", "processed", ideal_sensor_folder_name
+    "..", "..", "data", "raw", ideal_sensor_folder_name
 )
 
 # baseline_sensor_df = create_data_frame_for_figures(

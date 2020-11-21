@@ -1,3 +1,5 @@
+__author__ = "Anne Evered"
+
 # %% REQUIRED LIBRARIES
 import os
 import numpy as np
@@ -6,18 +8,22 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from celluloid import Camera
 from matplotlib.lines import Line2D
-from save_view_fig import save_view_fig, save_animation
-from risk_scenario_figures_shared_functions import (
+from src.visualization.save_view_fig import save_view_fig, save_animation
+from src.visualization.simulation_figures_shared_functions import (
     data_loading_and_preparation,
     get_features_dictionary,
 )
 
+# These functions are for creating an animation or static figure of simulation
+# output in Matplotlib that roughly follows Tidepool design color scheme, etc. for
+# different simulation elements (bg, temp_basal, sbr, etc.).
 
-# This script depends on imagemagick (for saving image). You can download imagemagick here:
+# This animation depends on imagemagick (for saving image). You can download imagemagick here:
 # http://www.imagemagick.org/script/download.php
 
+
 # Create figure
-def create_simulation_figure(
+def create_simulation_figure_matplotlib(
     file_location,
     file_names,
     traces,
@@ -27,7 +33,27 @@ def create_simulation_figure(
     subplot_titles=[],
     animate_figure=True,
     figure_name="simulation_figure",
+    save_fig_path=os.path.join("..", "..", "reports", "figures", "simulation_figure_examples")
 ):
+    """
+
+    Parameters
+    ----------
+    file_location
+    file_names
+    traces
+    subplots
+    time_range
+    main_title
+    subplot_titles
+    animate_figure
+    figure_name
+    save_fig_path
+
+    Returns
+    -------
+
+    """
     # Load data files
     data_frames = []
     for file in file_names:
@@ -86,7 +112,6 @@ def create_simulation_figure(
     # fig.tight_layout(rect=[0, 0.03, 1, 0.95]) #[0, 0.03, 1, 0.85])
 
     # Save figure
-    file_path = os.path.join("..", "..", "reports", "figures", "fda-risk-scenarios")
 
     if animate_figure:
         figure_name = figure_name + "-animation"
@@ -96,9 +121,9 @@ def create_simulation_figure(
     save_animation(
         animation,
         figure_name=figure_name,
-        analysis_name="risk-scenarios",
+        analysis_name="simulation_matplotlib_example",
         save_fig=True,
-        save_fig_path=file_path,
+        save_fig_path=save_fig_path,
         fps=5,
         dpi=100,
     )
@@ -294,7 +319,7 @@ def generate_figure_from_user_input():
     hours = int(input("How many hours do you want to show?"))  # 8
     title_text = input("Title of plot:")
 
-    create_simulation_figure(
+    create_simulation_figure_matplotlib(
         file_location=file_location,
         file_names=file_names,
         traces=traces,
@@ -305,145 +330,6 @@ def generate_figure_from_user_input():
         animate_figure=False,
     )
 
-
-# Create Figures
-file_location = os.path.join("..", "..", "data", "processed")
-loop_filename = "risk_scenarios_PyLoopkit v0.1.csv"
-no_loop_filename = "risk_scenarios_do_nothing.csv"
+    return
 
 
-simulation_name = "Risk Scenario: Double Carb Entry"
-simulation_description = (
-    "In this scenario, a user enters"
-    "a carb value into their pump twice (for example after thinking the first entry "
-    "\ndid not go through). Loop is then recommending doses based on erroneous carb values."
-)
-fields = [
-    "sbr",
-    "pump_sbr",
-    "isf",
-    "pump_isf",
-    "cir",
-    "pump_cir",
-    "true_bolus",
-    "reported_bolus",
-    "true_carb_value",
-    "reported_carb_value",
-]
-
-
-def simulation_description_title(
-    file, simulation_description, simulation_name, fields_for_title
-):
-    df = data_loading_and_preparation(
-        os.path.abspath(os.path.join(file_location, file))
-    )
-    title_text = (
-        "\n" + simulation_name + "\n\n" + simulation_description + "\nScenario Details:"
-    )
-
-    for field in fields_for_title:
-        title_text = (
-            title_text
-            + "\n"
-            + get_features_dictionary(field)["legend_label"]
-            + ": "
-            + str(df.iloc[0][field])
-        )
-
-    return title_text
-
-
-main_title = simulation_description_title(
-    loop_filename, simulation_description, simulation_name, fields_for_title=fields
-)
-
-
-# Single visualization showing elements without loop
-create_simulation_figure(
-    file_location=file_location,
-    file_names=[no_loop_filename],
-    traces=[
-        {0: ["bg", "bg_sensor"], 1: ["iob"], 2: ["sbr", "delivered_basal_insulin"]}
-    ],
-    subplots=3,
-    time_range=[0, 8],
-    main_title=main_title,
-    subplot_titles=[
-        "BG Values",
-        "Insulin On-Board",
-        "Scheduled Basal Rate and Delivered Basal Insulin",
-    ],
-    animate_figure=False,
-    figure_name="simulaton_no_loop",
-)
-
-# Single visualization showing elements with loop
-create_simulation_figure(
-    file_location=file_location,
-    file_names=[loop_filename],
-    traces=[
-        {
-            0: ["bg", "bg_sensor"],
-            1: ["iob", "reported_bolus", "true_bolus"],
-            2: ["temp_basal_sbr_if_nan", "sbr", "delivered_basal_insulin"],
-        }
-    ],
-    subplots=3,
-    time_range=[0, 8],
-    main_title=main_title,
-    subplot_titles=[
-        "BG Values",
-        "Insulin On-Board",
-        "Loop Decisions, Scheduled Basal Rate, and Delivered Basal Insulin",
-    ],
-    animate_figure=False,
-    figure_name="simulaton_with_loop",
-)
-
-
-# Comparison of loop to not loop in one visualization (both insulin and bg)
-create_simulation_figure(
-    file_location=file_location,
-    file_names=[no_loop_filename, loop_filename],
-    traces=[{0: ["bg", "bg_sensor"]}, {1: ["bg", "bg_sensor"]}],
-    subplots=2,
-    time_range=[0, 8],
-    main_title="Comparison of BG Simulation Results for Loop vs. No Loop",
-    subplot_titles=[],
-    animate_figure=False,
-    figure_name="loop_bg_comparison",
-)
-
-# Comparison of loop to not loop in one visualization (just bg)
-create_simulation_figure(
-    file_location=file_location,
-    file_names=[no_loop_filename, loop_filename],
-    traces=[
-        {0: ["bg", "bg_sensor"], 1: ["sbr", "delivered_basal_insulin"]},
-        {
-            2: ["bg", "bg_sensor"],
-            3: ["temp_basal_sbr_if_nan", "sbr", "delivered_basal_insulin"],
-        },
-    ],
-    subplots=4,
-    time_range=[0, 8],
-    main_title="Comparison of Simulation Results for Loop vs. No Loop",
-    subplot_titles=[
-        "BG Values without Loop",
-        "Basal Rate without Loop",
-        "BG Values with Loop",
-        "Basal Rate with Loop",
-    ],
-    animate_figure=False,
-    figure_name="loop_bg_insulin, comparison",
-)
-
-# EXAMPLE FROM USER INPUT
-generate_figure_from_user_input()
-
-# risk_scenarios_PyLoopkit v0.1.csv
-
-# bg, bg_sensor
-# iob
-# sbr, temp_basal_sbr_if_nan, delivered_basal_insulin

@@ -33,7 +33,7 @@ def get_data(filename, simulation_df):
 
 data = []
 
-path = os.path.join("..", "..", "data", "processed")
+path = os.path.join("..", "..", "data", "raw")
 folder_name = "icgm-sensitivity-analysis-results-2020-09-19.tar.gz"
 compressed_filestream = tarfile.open(os.path.join(path, folder_name))
 file_list = [
@@ -82,7 +82,7 @@ for filename in animation_filenames:  # [0:10]:
         "..",
         "..",
         "data",
-        "processed",
+        "raw",
         "icgm-sensitivity-analysis-results-2020-10-01-nogit",
     )
 
