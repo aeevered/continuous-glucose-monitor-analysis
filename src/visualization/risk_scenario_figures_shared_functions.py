@@ -181,7 +181,7 @@ def get_features_dictionary(field):
             shape="linear",
         )
 
-    # Todo: update with specific feature attributes want to use for fields below
+    # Todo: update with specific feature attributes want to use for fields below if going to included in animations
 
     elif field == "undelivered_basal_insulin":
         features_dictionary = dict(
