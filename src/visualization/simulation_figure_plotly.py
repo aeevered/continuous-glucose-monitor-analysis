@@ -482,5 +482,3 @@ def create_simulation_figure_plotly(
     )
 
     return
-
-

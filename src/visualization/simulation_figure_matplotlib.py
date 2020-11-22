@@ -33,7 +33,9 @@ def create_simulation_figure_matplotlib(
     subplot_titles=[],
     animate_figure=True,
     figure_name="simulation_figure",
-    save_fig_path=os.path.join("..", "..", "reports", "figures", "simulation_figure_examples")
+    save_fig_path=os.path.join(
+        "..", "..", "reports", "figures", "simulation_figure_examples"
+    ),
 ):
     """
     Create matplotlib animation or static image of simulation output that generally
@@ -496,5 +498,3 @@ def generate_figure_from_user_input():
     )
 
     return
-
-

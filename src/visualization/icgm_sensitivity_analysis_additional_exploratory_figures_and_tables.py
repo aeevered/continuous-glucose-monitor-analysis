@@ -13,7 +13,9 @@ import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
 from plotly.subplots import make_subplots
-from src.visualization.simulation_figures_shared_functions import data_loading_and_preparation
+from src.visualization.simulation_figures_shared_functions import (
+    data_loading_and_preparation,
+)
 from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 import plotly.figure_factory as ff
 
@@ -61,7 +63,7 @@ def calc_mbe(df):
 
 
 def calc_mard(df):
-    """ Mean Absolute Relative Deviation (MARD)
+    """Mean Absolute Relative Deviation (MARD)
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
     """
 
@@ -105,7 +107,7 @@ def get_sim_id(patient_characteristics_df, filename):
 
 
 def get_data_old_format(
-    filename, simulation_df, patient_characteristics_df, sensor_characteristics_df = ""
+    filename, simulation_df, patient_characteristics_df, sensor_characteristics_df=""
 ):
     sim_id = get_sim_id(patient_characteristics_df, filename)
     virtual_patient_num = "vp" + str(
@@ -225,13 +227,13 @@ def get_data_old_format(
     ]
 
 
-def get_data(filename, simulation_df, simulation_characteristics_json_data, baseline=False):
+def get_data(
+    filename, simulation_df, simulation_characteristics_json_data, baseline=False
+):
     sim_id = simulation_characteristics_json_data["sim_id"]
     virtual_patient_num = simulation_characteristics_json_data["sim_id"].split(".")[0]
     sensor_num = filename.split(".")[2]
-    patient_scenario_filename = (
-        filename.split(".")[0]
-    )
+    patient_scenario_filename = filename.split(".")[0]
     age = simulation_characteristics_json_data["controller"]["config"]["age"]
     ylw = simulation_characteristics_json_data["controller"]["config"]["ylw"]
     cir = simulation_characteristics_json_data["patient"]["config"][
@@ -321,8 +323,6 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
 
         mard = calc_mard(simulation_df)
         mbe = calc_mbe(simulation_df)
-
-
 
     bg_test_condition = filename.split(".")[1].replace("bg", "")
     analysis_type = filename.split(".")[3]
@@ -1367,7 +1367,13 @@ def create_cdf(
     fig.update_layout(title=title)
 
     save_view_fig(
-        fig, image_type, figure_name, analysis_name, view_fig, save_fig, save_fig_path,
+        fig,
+        image_type,
+        figure_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
     return
 
@@ -1471,7 +1477,13 @@ def create_scatter(
         fig.update_traces(marker=dict(size=3))
 
     save_view_fig(
-        fig, image_type, fig_name, analysis_name, view_fig, save_fig, save_fig_path,
+        fig,
+        image_type,
+        fig_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
     return
 
@@ -1683,7 +1695,7 @@ def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
 
     combined_df.to_csv(
         path_or_buf=os.path.join(
-            fig_path, "pairwise_comparison_combined_df_" + save_fig_folder_name +".csv"
+            fig_path, "pairwise_comparison_combined_df_" + save_fig_folder_name + ".csv"
         ),
         index=False,
     )
@@ -1731,11 +1743,12 @@ def run_pairwise_comparison_figures(save_fig_folder_name):
 
     # Generate crosstab of risk scores
     create_table_paired_risk_score_bins(
-       combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
+        combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
     )
 
     create_sensor_characteristic_scatters(
-        combined_df, fig_path=os.path.join(fig_path, "sensor_characteristic_distributions")
+        combined_df,
+        fig_path=os.path.join(fig_path, "sensor_characteristic_distributions"),
     )
 
     ########## Below are additional figures that could be run as needed ##########
@@ -1776,61 +1789,85 @@ def create_paired_comparison_histogram_kde(df, fig_path, color_value=""):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
 
-    comparison_types = [" Difference"] #" Ratio", " Percent Change", " Difference"]
+    comparison_types = [" Difference"]  # " Ratio", " Percent Change", " Difference"]
 
-    outcome_metrics = ["LBGI"] #"DKAI", "HBGI", "Percent <54"]
+    outcome_metrics = ["LBGI"]  # "DKAI", "HBGI", "Percent <54"]
 
-    #Specify the cutoffs want to check
-    threshold_dict = {"LBGI Difference" : [2]}
+    # Specify the cutoffs want to check
+    threshold_dict = {"LBGI Difference": [2]}
 
     for comparison_type, outcome_metric in itertools.product(
         comparison_types, outcome_metrics
     ):
         distribution_metric = outcome_metric + comparison_type
         for threshold in threshold_dict[distribution_metric]:
-            #Add column so can look at distributions above and below threshold
-            df["threshold_column"] = np.where(df[distribution_metric] > threshold, True, False)
+            # Add column so can look at distributions above and below threshold
+            df["threshold_column"] = np.where(
+                df[distribution_metric] > threshold, True, False
+            )
 
-            #Histogram with distribution above and below threshold
+            # Histogram with distribution above and below threshold
 
-            #Another method
+            # Another method
             # fig = px.histogram(df, x=distribution_metric, color="threshold_column", marginal="box")
 
-            hist_data = [df[df["threshold_column"]==True][distribution_metric], df[df["threshold_column"]==False][distribution_metric]]
-            group_labels = [distribution_metric + " > " + str(threshold), distribution_metric + " <= " + str(threshold)]
-            fig = ff.create_distplot(hist_data, group_labels, bin_size=.05, histnorm = "probability")
+            hist_data = [
+                df[df["threshold_column"] == True][distribution_metric],
+                df[df["threshold_column"] == False][distribution_metric],
+            ]
+            group_labels = [
+                distribution_metric + " > " + str(threshold),
+                distribution_metric + " <= " + str(threshold),
+            ]
+            fig = ff.create_distplot(
+                hist_data, group_labels, bin_size=0.05, histnorm="probability"
+            )
             fig.show()
-            #save fig - in the title, want to have distribution_metric, threshold in title
+            # save fig - in the title, want to have distribution_metric, threshold in title
 
             # Histogram with distribution above threshold
-            hist_data = [df[df["threshold_column"]==True][distribution_metric]]
+            hist_data = [df[df["threshold_column"] == True][distribution_metric]]
             group_labels = [distribution_metric + " > " + str(threshold)]
-            fig = ff.create_distplot(hist_data, group_labels, bin_size=.05, histnorm = "probability")
+            fig = ff.create_distplot(
+                hist_data, group_labels, bin_size=0.05, histnorm="probability"
+            )
             fig.show()
 
             # Histogram with distribution below threshold
-            hist_data = [df[df["threshold_column"]==False][distribution_metric]]
+            hist_data = [df[df["threshold_column"] == False][distribution_metric]]
             group_labels = [distribution_metric + " <= " + str(threshold)]
-            fig = ff.create_distplot(hist_data, group_labels, bin_size=.05, histnorm = "probability")
+            fig = ff.create_distplot(
+                hist_data, group_labels, bin_size=0.05, histnorm="probability"
+            )
             fig.show()
 
             # KDEF with overall distribution but with a line for threshold
             hist_data = [df[distribution_metric]]
             group_labels = ["All Data"]
-            fig = ff.create_distplot(hist_data, group_labels, bin_size=.05, histnorm = "probability")
-            #Add in the line at the threshold
+            fig = ff.create_distplot(
+                hist_data, group_labels, bin_size=0.05, histnorm="probability"
+            )
+            # Add in the line at the threshold
             fig.show()
 
             # CDF with distribution above and below threshold
-            fig = go.Figure(data=[go.Histogram(x=df[distribution_metric], cumulative_enabled=True, histnorm='probability')])
+            fig = go.Figure(
+                data=[
+                    go.Histogram(
+                        x=df[distribution_metric],
+                        cumulative_enabled=True,
+                        histnorm="probability",
+                    )
+                ]
+            )
 
-            fig.add_trace(go.Scatter(x=[2,2], y=[0,1]))
-
+            fig.add_trace(go.Scatter(x=[2, 2], y=[0, 1]))
 
             fig.show()
-            #Add in the line at the threshold
+            # Add in the line at the threshold
 
     return
+
 
 def print_counts_simulations_different_criteria(df):
 
@@ -2003,6 +2040,7 @@ def create_table_paired_risk_score_bins(df, fig_path):
 
     return
 
+
 def create_sensor_characteristic_scatters(df, fig_path):
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
@@ -2032,20 +2070,28 @@ def create_sensor_characteristic_scatters(df, fig_path):
     for i, sensor_characteristic_y in enumerate(sensor_characteristics):
         for j, sensor_characteristic_x in enumerate(sensor_characteristics):
 
-            fig = px.scatter(df, x=sensor_characteristic_x + "_icgm", y=sensor_characteristic_y + "_icgm")
+            fig = px.scatter(
+                df,
+                x=sensor_characteristic_x + "_icgm",
+                y=sensor_characteristic_y + "_icgm",
+            )
             fig.show()
 
             save_view_fig(
                 fig,
                 image_type="png",
-                figure_name=sensor_characteristic_x + "_" + sensor_characteristic_y + "_sensor_characteristic_distributions",
+                figure_name=sensor_characteristic_x
+                + "_"
+                + sensor_characteristic_y
+                + "_sensor_characteristic_distributions",
                 analysis_name="icgm-sensitivity-analysis",
                 view_fig=False,
                 save_fig=True,
-                save_fig_path=fig_path
+                save_fig_path=fig_path,
             )
 
     return
+
 
 def create_paired_comparison_bivariate_sensor_characteristic_scatter(df, fig_path):
     if not os.path.exists(fig_path):
@@ -2647,6 +2693,7 @@ def create_sensor_characteristics_table(df, fig_path):
 
     return
 
+
 def generate_all_results_figures(
     df, fig_path=os.path.join("..", "..", "reports", "figures")
 ):
@@ -2782,8 +2829,14 @@ def generate_all_results_figures(
 
 def settings_outside_clinical_bounds(cir, isf, sbr):
 
-    return ((float(isf) < 10) | (float(isf) > 500) | (float(cir) < 2) | (float(cir) > 150) | (float(sbr) < 0.05) | (
-                float(sbr) > 30))
+    return (
+        (float(isf) < 10)
+        | (float(isf) > 500)
+        | (float(cir) < 2)
+        | (float(cir) > 150)
+        | (float(sbr) < 0.05)
+        | (float(sbr) > 30)
+    )
 
 
 def create_data_frame_for_figures(
@@ -2798,7 +2851,7 @@ def create_data_frame_for_figures(
         "raw",
         "icgm-sensitivity-analysis-results-2020-09-19-nogit",
     ),
-    is_baseline = False
+    is_baseline=False,
 ):
     # scenarios_outside_clinical_bounds_df = pd.read_csv(
     #     os.path.join(
@@ -2814,7 +2867,7 @@ def create_data_frame_for_figures(
     # print("vp id outside clinical bounds: " + str(vp_outside_clinical_bounds))
 
     if old_format:
-        for i, filename in enumerate(sorted(os.listdir(results_path))): #[0:100]):
+        for i, filename in enumerate(sorted(os.listdir(results_path))):  # [0:100]):
             if filename.endswith(".csv"):
                 print(i, filename)
 
@@ -2828,7 +2881,12 @@ def create_data_frame_for_figures(
                     "r",
                 )
                 json_data = json.loads(f.read())
-                patient_characteristics_df = pd.DataFrame(json_data, index=["i",])
+                patient_characteristics_df = pd.DataFrame(
+                    json_data,
+                    index=[
+                        "i",
+                    ],
+                )
 
                 vp_id = (
                     patient_characteristics_df["patient_scenario_filename"]
@@ -2860,16 +2918,19 @@ def create_data_frame_for_figures(
                     )
                     json_data = json.loads(f.read())
 
-                sensor_characteristics_df = pd.DataFrame(json_data, index=["i",])
+                sensor_characteristics_df = pd.DataFrame(
+                    json_data,
+                    index=[
+                        "i",
+                    ],
+                )
 
                 # Add in the data, filtering out the virtual patients outside of clinical bounds
-                #if vp_id not in vp_outside_clinical_bounds:
+                # if vp_id not in vp_outside_clinical_bounds:
                 if filename_components[2] == "sIdealSensor":
                     data.append(
                         get_data_old_format(
-                            filename,
-                            simulation_df,
-                            patient_characteristics_df
+                            filename, simulation_df, patient_characteristics_df
                         )
                     )
                 else:
@@ -2885,7 +2946,7 @@ def create_data_frame_for_figures(
     else:
         removed_scenarios = []
 
-        for i, filename in enumerate(sorted(os.listdir(results_path))): #[0:100])):
+        for i, filename in enumerate(sorted(os.listdir(results_path))):  # [0:100])):
             if filename.endswith(".tsv"):
 
                 print(i, filename)
@@ -2893,9 +2954,10 @@ def create_data_frame_for_figures(
                     os.path.join(results_path, filename), sep="\t"
                 )
 
-                #Check that the first two bg values are equal
-                assert (simulation_df.loc[0]["bg"] == simulation_df.loc[1][
-                    "bg"]), "First two BG values of simulation are not equal"
+                # Check that the first two bg values are equal
+                assert (
+                    simulation_df.loc[0]["bg"] == simulation_df.loc[1]["bg"]
+                ), "First two BG values of simulation are not equal"
 
                 f = open(
                     os.path.join(results_path, filename.replace(".tsv", ".json")), "r"
@@ -2904,13 +2966,18 @@ def create_data_frame_for_figures(
 
                 vp_id = filename.split(".")[0].replace("vp", "")
 
-                cir = simulation_characteristics_json_data["patient"]["config"]["carb_ratio_schedule"]["schedule"][0]["setting"].replace(" g", "")
-                isf = simulation_characteristics_json_data["patient"]["config"]["insulin_sensitivity_schedule"]["schedule"][0]["setting"].replace(
-                    " m", "")
-                sbr = simulation_characteristics_json_data["patient"]["config"]["basal_schedule"]["schedule"][0]["setting"].replace(" U", "")
+                cir = simulation_characteristics_json_data["patient"]["config"][
+                    "carb_ratio_schedule"
+                ]["schedule"][0]["setting"].replace(" g", "")
+                isf = simulation_characteristics_json_data["patient"]["config"][
+                    "insulin_sensitivity_schedule"
+                ]["schedule"][0]["setting"].replace(" m", "")
+                sbr = simulation_characteristics_json_data["patient"]["config"][
+                    "basal_schedule"
+                ]["schedule"][0]["setting"].replace(" U", "")
 
                 # Add in the data
-                #if vp_id not in vp_outside_clinical_bounds:
+                # if vp_id not in vp_outside_clinical_bounds:
                 if settings_outside_clinical_bounds(cir, isf, sbr):
                     print(filename + " has settings outside clinical bounds.")
                     removed_scenarios.append([filename, cir, isf, sbr])
@@ -2925,9 +2992,13 @@ def create_data_frame_for_figures(
                         )
                     )
 
-        removed_scenarios_df = pd.DataFrame(removed_scenarios, columns=["filename", "cir", "isf", "sbr"])
+        removed_scenarios_df = pd.DataFrame(
+            removed_scenarios, columns=["filename", "cir", "isf", "sbr"]
+        )
         removed_scenarios_df.to_csv(
-            path_or_buf=os.path.join(save_path, results_folder_name + "_removed_scenarios_df.csv"),
+            path_or_buf=os.path.join(
+                save_path, results_folder_name + "_removed_scenarios_df.csv"
+            ),
             index=False,
         )
 
@@ -2998,6 +3069,7 @@ def create_data_frame_for_figures(
     )
 
     return results_df
+
 
 def clean_up_results_df(results_df):
 
@@ -3094,9 +3166,7 @@ if not os.path.exists(results_save_fig_path):
 # Load in the Ideal Sensor Data
 data = []
 ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
-baseline_files_path = os.path.join(
-    "..", "..", "data", "raw", ideal_sensor_folder_name
-)
+baseline_files_path = os.path.join("..", "..", "data", "raw", ideal_sensor_folder_name)
 
 # baseline_sensor_df = create_data_frame_for_figures(
 #     is_baseline = True,
@@ -3118,11 +3188,12 @@ baseline_files_path = os.path.join(
 # generate_all_results_figures(baseline_sensor_df, fig_path=results_save_fig_path)
 
 
-
 # Create all results figures (not pairwise) from the results data frame
-icgm_results_df = pd.read_csv(os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv"))
+icgm_results_df = pd.read_csv(
+    os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv")
+)
 generate_all_results_figures(icgm_results_df, fig_path=results_save_fig_path)
 
 # Create pairwise figures
-#run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df, save_fig_folder_name=save_fig_folder_name)
-#run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
+# run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df, save_fig_folder_name=save_fig_folder_name)
+# run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)

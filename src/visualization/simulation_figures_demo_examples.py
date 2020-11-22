@@ -3,16 +3,30 @@ __author__ = "Anne Evered"
 # %% REQUIRED LIBRARIES
 import os
 from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
-from src.visualization.simulation_figure_matplotlib import create_simulation_figure_matplotlib, generate_figure_from_user_input
-from src.visualization.simulation_figures_shared_functions import data_loading_and_preparation, get_features_dictionary
+from src.visualization.simulation_figure_matplotlib import (
+    create_simulation_figure_matplotlib,
+    generate_figure_from_user_input,
+)
+from src.visualization.simulation_figures_shared_functions import (
+    data_loading_and_preparation,
+    get_features_dictionary,
+)
 
 # This script provides examples of the matplotlib and plotly versions of simulation
-# output animation/figure for the purpose of testing, illustrating how these functions work and/or demoing.
+# output animation/figure for the purpose of testing,
+# illustrating how these functions work and/or demoing.
 
 ############## Simulation Animation Plotly Examples #################
 
 # Specify file location of where want to save examples to
-save_fig_path = os.path.join("..", "..", "reports", "figures", "simulation_figure_examples", "plotly_simulation_figures")
+save_fig_path = os.path.join(
+    "..",
+    "..",
+    "reports",
+    "figures",
+    "simulation_figure_examples",
+    "plotly_simulation_figures",
+)
 
 # Specify file location and filename of files to include in visualization
 file_location = os.path.join("..", "..", "data", "raw")
@@ -32,7 +46,11 @@ create_simulation_figure_plotly(
     time_range=(0, 8),
     main_title="Risk Scenario",
     subtitle="",
-    subplot_titles=["BG Values", "Insulin On-Board", "Scheduled Basal Rate", ],
+    subplot_titles=[
+        "BG Values",
+        "Insulin On-Board",
+        "Scheduled Basal Rate",
+    ],
     save_fig_path=save_fig_path,
     figure_name="plotly_simulation_figure",
     analysis_name="risk_scenarios",
@@ -65,7 +83,10 @@ create_simulation_figure_plotly(
 # Example of showing data from the loop example file and the no loop example file in one plot
 
 # List of dictionaries (one dictionary per file)
-traces = [{0: ["bg", "bg_sensor"], 1: ["sbr"]}, {2: ["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]}]
+traces = [
+    {0: ["bg", "bg_sensor"], 1: ["sbr"]},
+    {2: ["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]},
+]
 
 create_simulation_figure_plotly(
     files_need_loaded=True,
@@ -92,7 +113,7 @@ create_simulation_figure_plotly(
 
 
 def simulation_description_title(
-        file, simulation_description, simulation_name, fields_for_title
+    file, simulation_description, simulation_name, fields_for_title
 ):
     """
     For the purposes of these examples, this function creates a title from various elements
@@ -119,17 +140,17 @@ def simulation_description_title(
 
     # Create title
     title_text = (
-            "\n" + simulation_name + "\n\n" + simulation_description + "\nScenario Details:"
+        "\n" + simulation_name + "\n\n" + simulation_description + "\nScenario Details:"
     )
 
     # Add to title the fields and values for the particular fields passed in
     for field in fields_for_title:
         title_text = (
-                title_text
-                + "\n"
-                + get_features_dictionary(field)["legend_label"]
-                + ": "
-                + str(df.iloc[0][field])
+            title_text
+            + "\n"
+            + get_features_dictionary(field)["legend_label"]
+            + ": "
+            + str(df.iloc[0][field])
         )
 
     return title_text
@@ -179,7 +200,7 @@ create_simulation_figure_matplotlib(
     ],
     animate_figure=False,
     figure_name="simulaton_no_loop",
-    save_fig_path=save_fig_path
+    save_fig_path=save_fig_path,
 )
 
 # Single visualization showing elements with loop
@@ -203,7 +224,7 @@ create_simulation_figure_matplotlib(
     ],
     animate_figure=False,
     figure_name="simulaton_with_loop",
-    save_fig_path=save_fig_path
+    save_fig_path=save_fig_path,
 )
 
 # Comparison of loop to not loop in one visualization (both insulin and bg)
@@ -217,7 +238,7 @@ create_simulation_figure_matplotlib(
     subplot_titles=[],
     animate_figure=False,
     figure_name="loop_bg_comparison",
-    save_fig_path=save_fig_path
+    save_fig_path=save_fig_path,
 )
 
 # Comparison of loop to not loop in one visualization (just bg)
@@ -242,9 +263,9 @@ create_simulation_figure_matplotlib(
     ],
     animate_figure=False,
     figure_name="loop_bg_insulin, comparison",
-    save_fig_path=save_fig_path
+    save_fig_path=save_fig_path,
 )
 
 
 # Example from user input
-#generate_figure_from_user_input()
+# generate_figure_from_user_input()

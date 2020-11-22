@@ -254,12 +254,7 @@ def create_insulin_pulse_animation(file_location, filename):
 
     # Path to save figure at
     save_fig_path = os.path.join(
-        "..",
-        "..",
-        "reports",
-        "figures",
-        "insulin-pulses-risk-assessment",
-        "animations"
+        "..", "..", "reports", "figures", "insulin-pulses-risk-assessment", "animations"
     )
 
     # Make path if it doesn't exist yet
@@ -267,7 +262,12 @@ def create_insulin_pulse_animation(file_location, filename):
         print("making directory " + save_fig_path + "...")
         os.makedirs(save_fig_path)
 
-    animation.save(os.path.join(save_fig_path, animation_file_name + ".gif"), writer="imagemagick", fps=5, dpi=100)
+    animation.save(
+        os.path.join(save_fig_path, animation_file_name + ".gif"),
+        writer="imagemagick",
+        fps=5,
+        dpi=100,
+    )
 
 
 # TODO: split above into additional functions
@@ -276,7 +276,7 @@ def create_insulin_pulse_animation(file_location, filename):
 # simulation_figure_matplotlib.py. This is older code that predates simulation_figure_matplotlib.py.
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Create Figures
     insulin_pulse_file_location = os.path.join(

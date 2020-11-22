@@ -24,24 +24,35 @@ from src.visualization.simulation_figure_plotly import create_simulation_figure_
 
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 
-#Todo: Update to use MARD and MBE functions from icgm-sensitivity-analysis or from data-science-metrics
-#Reference: https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py
+
+# Todo: Update to use MARD and MBE functions from icgm-sensitivity-analysis or from data-science-metrics Reference:
+#  https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py
+
 
 def add_error_fields(df):
     """
 
-    :param df: data
-    :return:
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to add error fields to (for use in MARD and MBE calculations)
+
+    Returns
+    -------
+    df: dataframe
+        dataframe with new error field columns
+
     """
-    # default icgm and ysi ranges [40, 400] and [0, 900]
+    # Default iCGM and ysi ranges [40, 400] and [0, 900]
     sensor_bg_range = (40, 400)
     sensor_min, sensor_max = sensor_bg_range
 
-    # calculate the icgm error (difference and percentage)
+    # Calculate the iCGM error (difference and percentage)
     sensor_bg_values = df["bg_sensor"].values
     bg_values = df["bg"].values
     icgm_error = sensor_bg_values - bg_values
 
+    # Add error field to dataframe
     df["icgmError"] = icgm_error
     abs_difference_error = np.abs(icgm_error)
     df["absError"] = abs_difference_error
@@ -55,63 +66,83 @@ def add_error_fields(df):
 
 
 def calc_mbe(df):
+    """
 
-    # default icgm and ysi ranges [40, 400] and [0, 900]
+    Calculate mean bias
 
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to calculate mean bias error (MBE) from
+
+    Returns
+    -------
+    mean bias error calculation
+
+    """
     df = add_error_fields(df)
     return np.mean(df.loc[df["withinMeasRange"], "icgmError"])
 
 
 def calc_mard(df):
-    """ Mean Absolute Relative Deviation (MARD)
-    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
     """
+    Calculate Mean Absolute Relative Deviation (MARD)
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
 
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to calculate mean absolute relative deviation (MARD) from
+
+    Returns
+    -------
+    mard calculation
+
+    """
     df = add_error_fields(df)
 
     abs_relative_difference_in_measurement_range = df.loc[
         df["withinMeasRange"], "absRelDiff"
     ]
+
     return np.mean(abs_relative_difference_in_measurement_range)
 
 
-# Parse out simulation id
-def get_sim_id(patient_characteristics_df, filename):
-    sensor_num = (
-        filename.split("/")[-1]
-        .split(".")[2]
-        .replace("s", "")
-        .replace("Senor", "Sensor")
-    )
-    vp_id = (
-        patient_characteristics_df["patient_scenario_filename"]
-        .iloc[0]
-        .split("/")[-1]
-        .split(".")[0]
-        .replace("train_", "")
-    )
-    bg_test_condition = filename.split(".")[1]
-    analysis_type = filename.split(".")[3]
-    sim_id = (
-        "vp"
-        + str(vp_id)
-        + ".bg"
-        + ".s"
-        + str(sensor_num)
-        + "."
-        + str(bg_test_condition)
-        + "."
-        + analysis_type
-    )
-    return sim_id
+# TODO: this may not be the best way of loading the data files in because of speed and
+# and could be prone to error since need to make sure the fields returning and the column names match
 
-def get_data(filename, simulation_df, simulation_characteristics_json_data, baseline=False):
+
+def get_data(
+    filename, simulation_df, simulation_characteristics_json_data, baseline=False
+):
+    """
+
+    Returns a list of data
+
+    Parameters
+    ----------
+    filename: str
+        name of file corresponding
+    simulation_df: dataframe
+        dataframe of the particular simulation want to return data for
+    simulation_characteristics_json_data: dataframe
+        json simulation characteristics data corresponding to that simulaton
+    baseline: bool
+        whether this particular file is a baseline file
+
+    Returns
+    -------
+    list of data items that will be a row in aggregated summary dataframe
+
+    """
     sim_id = simulation_characteristics_json_data["sim_id"]
     virtual_patient_num = simulation_characteristics_json_data["sim_id"].split(".")[0]
+
+    # Parse sensor_num and patient_scenario_filename from filename
     sensor_num = filename.split(".")[2]
-    patient_scenario_filename = (
-        filename.split(".")[0]
-    )
+    patient_scenario_filename = filename.split(".")[0]
+
+    # Get simulation characteristics from json data
     age = simulation_characteristics_json_data["controller"]["config"]["age"]
     ylw = simulation_characteristics_json_data["controller"]["config"]["ylw"]
     cir = simulation_characteristics_json_data["patient"]["config"][
@@ -128,6 +159,9 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
     starting_bg_sensor = simulation_df["bg_sensor"].iloc[0]
     true_bolus = simulation_df["true_bolus"].iloc[1]
 
+    # If the file is a baseline file, set all sensor characteristics to nan
+    # These columns are included in case there is a future case where the baseline
+    # sensors have sensor characteristics and do not just return the bg value.
     if baseline:
         initial_bias = np.nan
         bias_norm_factor = np.nan
@@ -149,6 +183,7 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
         mard = np.nan
         mbe = np.nan
 
+    # If the file is not a baseline file, get sensor characteristics from the json data
     else:
         initial_bias = simulation_characteristics_json_data["patient"]["sensor"][
             "initial_bias"
@@ -168,7 +203,6 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
         noise_coefficient = simulation_characteristics_json_data["patient"]["sensor"][
             "noise_coefficient"
         ]
-
         delay = simulation_characteristics_json_data["patient"]["sensor"]["delay"]
         bias_drift_type = simulation_characteristics_json_data["patient"]["sensor"][
             "bias_drift_type"
@@ -199,18 +233,21 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
             "noise_max"
         ]
 
+        # Calculate mard and mbe
         mard = calc_mard(simulation_df)
         mbe = calc_mbe(simulation_df)
 
+    # Parse the bg test condition and analysis type from filename
     bg_test_condition = filename.split(".")[1].replace("bg", "")
     analysis_type = filename.split(".")[3]
 
-    LBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
-    LBGI_RS = metrics.glucose.lbgi_risk_score(LBGI)
-    DKAI = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
-    DKAI_RS = metrics.insulin.dka_risk_score(DKAI)
-    HBGI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[1]
-    BGRI = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[2]
+    # Calculate risk metrics (using data-science-metrics functions)
+    lbgi = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[0]
+    lbgi_rs = metrics.glucose.lbgi_risk_score(lbgi)
+    dkai = metrics.insulin.dka_index(simulation_df["iob"], simulation_df["sbr"].iloc[0])
+    dkai_rs = metrics.insulin.dka_risk_score(dkai)
+    hbgi = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[1]
+    bgri = metrics.glucose.blood_glucose_risk_index(bg_array=simulation_df["bg"])[2]
     percent_lt_54 = metrics.glucose.percent_values_lt_54(bg_array=simulation_df["bg"])
 
     return [
@@ -248,35 +285,67 @@ def get_data(filename, simulation_df, simulation_characteristics_json_data, base
         mbe,
         bg_test_condition,
         analysis_type,
-        LBGI,
-        LBGI_RS,
-        DKAI,
-        DKAI_RS,
-        HBGI,
-        BGRI,
+        lbgi,
+        lbgi_rs,
+        dkai,
+        dkai_rs,
+        hbgi,
+        bgri,
         percent_lt_54,
     ]
 
 
-# %% Visualization Functions
-# %% FUNCTIONS
-# TODO: us mypy and specify the types
+# Visualization Functions
+
+# TODO: use mypy and specify the types
 
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
+
 # TODO: automatically grab the code version to add to the figures generated
 code_version = "v0-1-0"
 
-# adding in some generic methods for tables based on bins
+
+# Meta data table code based on legacy make_figures_and_tables.py code
+
+# Generic methods for tables based on bins
 def bin_data(bin_breakpoints):
+    """
+
+    Parameters
+    ----------
+    bin_breakpoints: array-like
+        Array-like containing Interval objects from which to build the IntervalIndex.
+
+    Returns
+    -------
+    interval index
+
+    """
+
     # the bin_breakpoints are the points that are greater than or equal to
     return pd.IntervalIndex.from_breaks(bin_breakpoints, closed="left")
 
 
+# TODO: THIS FUNCTION NEEDS UPDATED
 def get_metadata_tables(demographic_df, fig_path):
-    # %% prepare demographic data for tables
+    """
+
+    Parameters
+    ----------
+    demographic_df
+    fig_path
+
+    Returns
+    -------
+
+    """
+
+    # Prepare demographic data for tables
 
     print(demographic_df.columns)
-    virtual_patient_group = demographic_df[["virtual_patient_num","age", "ylw", "CIR", "ISF", "SBR"]].groupby("virtual_patient_num")
+    virtual_patient_group = demographic_df[
+        ["virtual_patient_num", "age", "ylw", "CIR", "ISF", "SBR"]
+    ].groupby("virtual_patient_num")
     print(virtual_patient_group.columns)
     demographic_reduced_df = virtual_patient_group[
         ["age", "ylw", "CIR", "ISF", "SBR"]
@@ -507,6 +576,26 @@ def make_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Parameters
+    ----------
+    table_df
+    image_type
+    table_name
+    analysis_name
+    cell_height
+    cell_width
+    cell_header_height
+    view_fig
+    save_fig
+    save_csv
+    save_fig_path
+
+    Returns
+    -------
+
+    """
     # TODO: reduce the number of inputs to: df, style_dict, and save_dict
     table_cols = table_df.columns
     n_rows, n_cols = table_df.shape
@@ -554,20 +643,6 @@ def make_table(
         height=table_height,
     )
 
-    """
-    if view_fig:
-        plot(fig)
-
-    file_name = "{}-{}_{}_{}".format(
-        analysis_name, table_name, utc_string, code_version
-    )
-    if save_fig:
-        pio.write_image(
-            fig=fig,
-            file=os.path.join(save_fig_path, file_name + ".{}".format(image_type)),
-            format=image_type,
-        )
-    """
     file_name = "{}-{}_{}_{}".format(
         analysis_name, table_name, utc_string, code_version
     )
@@ -577,7 +652,10 @@ def make_table(
 
     return
 
+
 ########## Spearman Correlation Coefficient Table #################
+# TODO: Spearman Correlation Coefficient Table should be QC-ed and
+#  possibly add some in line tests
 def spearman_correlation_table(
     results_df,
     image_type="png",
@@ -591,7 +669,26 @@ def spearman_correlation_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
 
+    Parameters
+    ----------
+    results_df
+    image_type
+    table_name
+    analysis_name
+    cell_header_height
+    cell_height
+    cell_width
+    view_fig
+    save_fig
+    save_csv
+    save_fig_path
+
+    Returns
+    -------
+
+    """
     rows = [
         "bias_factor",
         "bias_drift_oscillations",
@@ -643,7 +740,6 @@ def spearman_correlation_table(
     return
 
 
-# Function for checking distributions
 def create_scatter(
     df,
     x_value="cir",
@@ -657,7 +753,28 @@ def create_scatter(
     fig_name="",
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
 
+    Function for checking the distribution of the risk scores by sensor characteristics.
+
+    Parameters
+    ----------
+    df
+    x_value
+    y_value
+    color_value
+    image_type
+    analysis_name
+    view_fig
+    save_fig
+    title
+    fig_name
+    save_fig_path
+
+    Returns
+    -------
+
+    """
     if color_value != "":
         df = df.sort_values(by=color_value, ascending=True)
         fig = px.scatter(
@@ -676,11 +793,30 @@ def create_scatter(
         fig.update_traces(marker=dict(size=3))
 
     save_view_fig(
-        fig, image_type, fig_name, analysis_name, view_fig, save_fig, save_fig_path,
+        fig,
+        image_type,
+        fig_name,
+        analysis_name,
+        view_fig,
+        save_fig,
+        save_fig_path,
     )
     return
 
+
 def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
+    """
+
+    Parameters
+    ----------
+    results_df
+    baseline_df
+    save_fig_folder_name
+
+    Returns
+    -------
+
+    """
     # Add ratio to each row
     # Need to look up for each row into the baseline_df by virtual patient and by
     fig_path = os.path.join(
@@ -747,7 +883,7 @@ def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
 
     combined_df.to_csv(
         path_or_buf=os.path.join(
-            fig_path, "pairwise_comparison_combined_df_" + save_fig_folder_name +".csv"
+            fig_path, "pairwise_comparison_combined_df_" + save_fig_folder_name + ".csv"
         ),
         index=False,
     )
@@ -758,7 +894,16 @@ def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
 
 
 def run_pairwise_comparison_figures(save_fig_folder_name):
+    """
 
+    Parameters
+    ----------
+    save_fig_folder_name
+
+    Returns
+    -------
+
+    """
     fig_path = os.path.join(
         "..",
         "..",
@@ -787,17 +932,29 @@ def run_pairwise_comparison_figures(save_fig_folder_name):
 
     # Generate crosstab of risk scores
     create_table_paired_risk_score_bins(
-       combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
+        combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
     )
 
     create_sensor_characteristic_scatters(
-        combined_df, fig_path=os.path.join(fig_path, "sensor_characteristic_distributions")
+        combined_df,
+        fig_path=os.path.join(fig_path, "sensor_characteristic_distributions"),
     )
 
     return
 
 
 def create_table_paired_risk_score_bins(df, fig_path):
+    """
+
+    Parameters
+    ----------
+    df
+    fig_path
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -940,7 +1097,19 @@ def create_table_paired_risk_score_bins(df, fig_path):
 
     return
 
+
 def create_sensor_characteristic_scatters(df, fig_path):
+    """
+
+    Parameters
+    ----------
+    df
+    fig_path
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -968,21 +1137,28 @@ def create_sensor_characteristic_scatters(df, fig_path):
     # Create a plot for each of the sensor characteristics specified
     for i, sensor_characteristic_y in enumerate(sensor_characteristics):
         for j, sensor_characteristic_x in enumerate(sensor_characteristics):
-
-            fig = px.scatter(df, x=sensor_characteristic_x + "_icgm", y=sensor_characteristic_y + "_icgm")
+            fig = px.scatter(
+                df,
+                x=sensor_characteristic_x + "_icgm",
+                y=sensor_characteristic_y + "_icgm",
+            )
             fig.show()
 
             save_view_fig(
                 fig,
                 image_type="png",
-                figure_name=sensor_characteristic_x + "_" + sensor_characteristic_y + "_sensor_characteristic_distributions",
+                figure_name=sensor_characteristic_x
+                + "_"
+                + sensor_characteristic_y
+                + "_sensor_characteristic_distributions",
                 analysis_name="icgm-sensitivity-analysis",
                 view_fig=False,
                 save_fig=True,
-                save_fig_path=fig_path
+                save_fig_path=fig_path,
             )
 
     return
+
 
 def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""):
     if not os.path.exists(fig_path):
@@ -991,7 +1167,7 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
 
     comparison_types = [" Ratio", " Percent Change", " Difference"]
 
-    outcome_metrics = ["LBGI", "DKAI", "HBGI"]  # "Percent <54"]
+    outcome_metrics = ["LBGI", "DKAI", "HBGI"]
 
     sensor_characteristics = [
         "mard_icgm",
@@ -1039,148 +1215,19 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
 
     return
 
-def visualize_individual_sim_result(df, icgm_path, baseline_path, save_fig_path, save_fig_folder_name, animation_filenames = []):
-    # animation_filenames = df.loc[
-    #     ((df["HBGI Difference"] > 20) | (df["HBGI Difference"] < -20)), "filename_icgm"
-    # ]
-    # df.loc[((df['DKAI Difference'] > 5) | (df['LBGI Difference'] > 5)), 'filename_icgm']
-
-    # For testing
-    # animation_filenames = ["vp12.bg9.s1.correction_bolus.csv"]
-    # print(len(animation_filenames))
-
-    for i, filename in enumerate(animation_filenames[0:10]):
-
-        print(i, filename)
-
-        baseline_filename = df.loc[
-            df["filename_icgm"] == filename, "filename_baseline"
-        ].iloc[0]
-
-        icgm_DKAI_RS = df.loc[
-            df["filename_icgm"] == filename, "DKAI Risk Score_icgm"
-        ].iloc[0]
-        icgm_LBGI_RS = df.loc[
-            df["filename_icgm"] == filename, "LBGI Risk Score_icgm"
-        ].iloc[0]
-
-        baseline_DKAI_RS = df.loc[
-            df["filename_icgm"] == filename, "DKAI Risk Score_baseline"
-        ].iloc[0]
-        baseline_LBGI_RS = df.loc[
-            df["filename_icgm"] == filename, "LBGI Risk Score_baseline"
-        ].iloc[0]
-
-        mard_icgm = df.loc[
-            df["filename_icgm"] == filename, "mard_icgm"
-        ].iloc[0]
-
-        initial_bias_icgm = df.loc[
-            df["filename_icgm"] == filename, "initial_bias_icgm"
-        ].iloc[0]
-
-        icgm_simulation_df = data_loading_and_preparation(
-            os.path.join(icgm_path, filename)
-        )
-
-        baseline_simulation_df = data_loading_and_preparation(
-            os.path.join(baseline_path, baseline_filename)
-        )
-
-        # List of dictionaries
-        traces = [
-            {0: ["bg", "bg_sensor"], 1: ["sbr", "temp_basal_sbr_if_nan"]},
-            {2: ["bg", "bg_sensor"], 3: ["sbr", "temp_basal_sbr_if_nan"]},
-        ]
-
-        print(baseline_simulation_df.columns)
-        print(icgm_simulation_df.columns)
-
-        max_basal = (
-            max(
-                np.nanmax(baseline_simulation_df["sbr"]),
-                np.nanmax(icgm_simulation_df["sbr"]),
-                np.nanmax(baseline_simulation_df["temp_basal"]),
-                np.nanmax(icgm_simulation_df["temp_basal"]),
-            )
-            + 0.5
-        )
-        max_bg = (
-            max(
-                np.nanmax(baseline_simulation_df["bg"]),
-                np.nanmax(icgm_simulation_df["bg"]),
-                np.nanmax(baseline_simulation_df["bg_sensor"]),
-                np.nanmax(icgm_simulation_df["bg_sensor"]),
-            )
-            + 20
-        )
-        min_bg = (
-            min(
-                np.nanmin(baseline_simulation_df["bg"]),
-                np.nanmin(icgm_simulation_df["bg"]),
-                np.nanmin(baseline_simulation_df["bg_sensor"]),
-                np.nanmin(icgm_simulation_df["bg_sensor"]),
-            )
-            - 10
-        )
-
-
-        create_simulation_figure_plotly(
-            files_need_loaded=False,
-            data_frames=[icgm_simulation_df, baseline_simulation_df],
-            file_location=os.path.join("..", "..", "data", "raw"),
-            file_names=[filename, baseline_filename],
-            traces=traces,
-            show_legend=False,
-            subplots=4,
-            time_range=(0, 8),
-            subtitle="",
-            main_title="iCGM: DKAI RS "
-             + str(icgm_DKAI_RS)
-             + ", LBGI RS "
-             + str(icgm_LBGI_RS)
-            + ",  MARD: "
-            + str(int(mard_icgm))
-           + ",  Initial Bias: "
-           + str(int(initial_bias_icgm))
-            + " ; Baseline: DKAI RS "
-            + str(int(baseline_DKAI_RS))
-            + ", LBGI RS "
-            + str(int(baseline_LBGI_RS))
-            + "<br>"
-            + filename,
-            subplot_titles=[
-                "BG Values (iCGM)",
-                "Scheduled Basal Rate and Loop Decisions (iCGM)",
-                "BG Values (Baseline)",
-                "Scheduled Basal Rate and Loop Decisions (Baseline)",
-            ],
-            save_fig_path=os.path.join(
-                save_fig_path,
-                "example_simulations",
-                save_fig_folder_name,
-            ),
-            figure_name= filename,
-            analysis_name="icgm_sensitivity_analysis",
-            animate=False,
-            custom_axes_ranges=[
-                (min(50, min_bg), max(260, max_bg)),
-                (0, max_basal),
-                (min(50, min_bg), max(260, max_bg)),
-                (0, max_basal),
-            ],
-            custom_tick_marks=[
-                [54, 70, 140, 180, 250, 300, 350, 400],
-                np.arange(0, max_basal, 0.5),
-                [54, 70, 140, 180, 250],
-                +np.arange(0, max_basal, 0.5),
-            ],
-        )
-
-    return
-
 
 def create_sensor_characteristics_table(df, fig_path):
+    """
+
+    Parameters
+    ----------
+    df
+    fig_path
+
+    Returns
+    -------
+
+    """
     columns = [
         "sensor_num_icgm",
         "initial_bias_icgm",
@@ -1214,46 +1261,75 @@ def create_sensor_characteristics_table(df, fig_path):
 
 
 def settings_outside_clinical_bounds(cir, isf, sbr):
+    """
 
-    return ((float(isf) < 10) | (float(isf) > 500) | (float(cir) < 2) | (float(cir) > 150) | (float(sbr) < 0.05) | (
-                float(sbr) > 30))
+    Parameters
+    ----------
+    cir: float
+    isf: float
+    sbr:float
+
+    Returns
+    -------
+
+    """
+    return (
+        (float(isf) < 10)
+        | (float(isf) > 500)
+        | (float(cir) < 2)
+        | (float(cir) > 150)
+        | (float(sbr) < 0.05)
+        | (float(sbr) > 30)
+    )
 
 
 def create_data_frame_for_figures(
-    results_path,
-    save_path,
-    results_folder_name,
-    is_baseline=False
+    results_path, save_path, results_folder_name, is_baseline=False
 ):
+    """
 
+    Parameters
+    ----------
+    results_path
+    save_path
+    results_folder_name
+    is_baseline
+
+    Returns
+    -------
+
+    """
     removed_scenarios = []
+    data = []
 
-    for i, filename in enumerate(sorted(os.listdir(results_path))): #[0:100])):
+    for i, filename in enumerate(sorted(os.listdir(results_path))):  # [0:100])):
         if filename.endswith(".tsv"):
 
             print(i, filename)
-            simulation_df = pd.read_csv(
-                os.path.join(results_path, filename), sep="\t"
-            )
+            simulation_df = pd.read_csv(os.path.join(results_path, filename), sep="\t")
 
-            #Check that the first two bg values are equal
-            assert (simulation_df.loc[0]["bg"] == simulation_df.loc[1][
-                "bg"]), "First two BG values of simulation are not equal"
+            # Check that the first two bg values are equal
+            assert (
+                simulation_df.loc[0]["bg"] == simulation_df.loc[1]["bg"]
+            ), "First two BG values of simulation are not equal"
 
-            f = open(
-                os.path.join(results_path, filename.replace(".tsv", ".json")), "r"
-            )
+            f = open(os.path.join(results_path, filename.replace(".tsv", ".json")), "r")
             simulation_characteristics_json_data = json.loads(f.read())
 
             vp_id = filename.split(".")[0].replace("vp", "")
 
-            cir = simulation_characteristics_json_data["patient"]["config"]["carb_ratio_schedule"]["schedule"][0]["setting"].replace(" g", "")
-            isf = simulation_characteristics_json_data["patient"]["config"]["insulin_sensitivity_schedule"]["schedule"][0]["setting"].replace(
-                " m", "")
-            sbr = simulation_characteristics_json_data["patient"]["config"]["basal_schedule"]["schedule"][0]["setting"].replace(" U", "")
+            cir = simulation_characteristics_json_data["patient"]["config"][
+                "carb_ratio_schedule"
+            ]["schedule"][0]["setting"].replace(" g", "")
+            isf = simulation_characteristics_json_data["patient"]["config"][
+                "insulin_sensitivity_schedule"
+            ]["schedule"][0]["setting"].replace(" m", "")
+            sbr = simulation_characteristics_json_data["patient"]["config"][
+                "basal_schedule"
+            ]["schedule"][0]["setting"].replace(" U", "")
 
             # Add in the data
-            #if vp_id not in vp_outside_clinical_bounds:
+            # if vp_id not in vp_outside_clinical_bounds:
             if settings_outside_clinical_bounds(cir, isf, sbr):
                 print(filename + " has settings outside clinical bounds.")
                 removed_scenarios.append([filename, cir, isf, sbr])
@@ -1268,9 +1344,13 @@ def create_data_frame_for_figures(
                     )
                 )
 
-        removed_scenarios_df = pd.DataFrame(removed_scenarios, columns=["filename", "cir", "isf", "sbr"])
+        removed_scenarios_df = pd.DataFrame(
+            removed_scenarios, columns=["filename", "cir", "isf", "sbr"]
+        )
         removed_scenarios_df.to_csv(
-            path_or_buf=os.path.join(save_path, results_folder_name + "_removed_scenarios_df.csv"),
+            path_or_buf=os.path.join(
+                save_path, results_folder_name + "_removed_scenarios_df.csv"
+            ),
             index=False,
         )
 
@@ -1329,8 +1409,18 @@ def create_data_frame_for_figures(
 
     return results_df
 
-def clean_up_results_df(results_df):
 
+def clean_up_results_df(results_df):
+    """
+
+    Parameters
+    ----------
+    results_df
+
+    Returns
+    -------
+
+    """
     results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
 
     # rename the analysis types
@@ -1383,71 +1473,72 @@ level_of_analysis_dict = {
 
 #### LOAD IN DATA #####
 
-# Load in the iCGM Data
-data = []
-icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
-results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
+if __name__ == "__main__":
 
-# Set where to save figures
-save_fig_folder_name = icgm_folder_name
+    # Specify this parameter based on whether want to load the data and run the figures
+    # or just run the figures
+    data_already_loaded = True
 
-results_save_fig_path = os.path.join(
-    "..",
-    "..",
-    "reports",
-    "figures",
-    "icgm-sensitivity-paired-comparison-figures",
-    save_fig_folder_name,
-)
+    # Specify the iCGM data filepath
+    icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
+    results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
 
-not_pairwise_save_fig_path = os.path.join(
-    "..",
-    "..",
-    "reports",
-    "figures",
-    "icgm-sensitivity-analysis-results-figures",
-    save_fig_folder_name,
-)
+    # Specify the Baseline data fildepath
+    ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
+    baseline_files_path = os.path.join(
+        "..", "..", "data", "raw", ideal_sensor_folder_name
+    )
 
-if not os.path.exists(results_save_fig_path):
-    print("making directory " + results_save_fig_path + "...")
-    os.makedirs(results_save_fig_path)
+    # Set where to save figures
+    save_fig_folder_name = icgm_folder_name
 
-# icgm_results_df = create_data_frame_for_figures(
-#     results_path=results_files_path,
-#     save_path=results_save_fig_path,
-#     results_folder_name=icgm_folder_name,
-# )
+    results_save_fig_path = os.path.join(
+        "..",
+        "..",
+        "reports",
+        "figures",
+        "icgm-sensitivity-paired-comparison-figures",
+        save_fig_folder_name,
+    )
 
+    if not os.path.exists(results_save_fig_path):
+        print("making directory " + results_save_fig_path + "...")
+        os.makedirs(results_save_fig_path)
 
-# Load in the Ideal Sensor Data
-data = []
-ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
-baseline_files_path = os.path.join(
-    "..", "..", "data", "raw", ideal_sensor_folder_name
-)
+    # Load in the data (uncomment this section if data not previously loaded for desired files)
 
-# baseline_sensor_df = create_data_frame_for_figures(
-#     is_baseline = True,
-#     results_path=baseline_files_path,
-#     save_path=results_save_fig_path,
-#     results_folder_name=ideal_sensor_folder_name,
-# )
+    if not data_already_loaded:
+        icgm_results_df = create_data_frame_for_figures(
+            results_path=results_files_path,
+            save_path=results_save_fig_path,
+            results_folder_name=icgm_folder_name,
+        )
 
-#### CREATE FIGURES #####
+        baseline_sensor_df = create_data_frame_for_figures(
+            is_baseline=True,
+            results_path=baseline_files_path,
+            save_path=results_save_fig_path,
+            results_folder_name=ideal_sensor_folder_name,
+        )
+        run_pairwise_comparison(
+            results_df=icgm_results_df,
+            baseline_df=baseline_sensor_df,
+            save_fig_folder_name=save_fig_folder_name,
+        )
 
-#### Create pairwise figures ####
-#run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df, save_fig_folder_name=save_fig_folder_name)
+    else:
+        # Just create the figures (loads in the already existing combined_df)
+        run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
 
-#If have already loaded the data and just want pairwise comparison figures
-#run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
+    # Create metadata tables
+    metadata_save_path = os.path.join(results_save_fig_path, "metadata_tables")
 
-# Create metadata tables
-metadata_save_path = os.path.join(results_save_fig_path, "metadata_tables")
-if not os.path.exists(metadata_save_path):
-    print("making directory " + metadata_save_path + "...")
-    os.makedirs(metadata_save_path)
+    if not os.path.exists(metadata_save_path):
+        print("making directory " + metadata_save_path + "...")
+        os.makedirs(metadata_save_path)
 
-icgm_results_df = pd.read_csv(os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv"))
+    icgm_results_df = pd.read_csv(
+        os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv")
+    )
 
-get_metadata_tables(icgm_results_df, fig_path=metadata_save_path)
+    get_metadata_tables(icgm_results_df, fig_path=metadata_save_path)

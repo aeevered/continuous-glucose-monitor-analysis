@@ -1,5 +1,6 @@
 # Figures for Data Science Risk Analyses
 
+
 #### -- Project Status: [Active]
 #### -- Project Disclaimer: This work is for [Exploration]
  ## Project Objective
@@ -9,6 +10,12 @@ Team risk analyses results.
 - Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
 - iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
 - Replay Loop Analyses (replay-loop-animations.py)
+
+This file also includes generalized code for
+visualizing simulation results 
+
+
+![](simulation_example_gif.gif)
 
 ## Definition of Done
 This phase of the project will be done when exploratory analysis for these projects is completed and final figures are 

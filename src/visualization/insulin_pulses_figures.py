@@ -28,25 +28,25 @@ risk_score_color_dict = {
 
 # Visualization Functions
 def create_scatter_plot_v1(
-        table_df,
-        x_value,
-        y_value,
-        hover_value,
-        color_value_column,
-        legend_title,
-        title,
-        x_title,
-        y_title,
-        color_dict=risk_score_color_dict,
-        score_dict=risk_score_dict,
-        image_type="png",
-        figure_name="<number-or-name>",
-        analysis_name="<analysis-name>",
-        view_fig=True,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-        width=600,
-        height=700,
+    table_df,
+    x_value,
+    y_value,
+    hover_value,
+    color_value_column,
+    legend_title,
+    title,
+    x_title,
+    y_title,
+    color_dict=risk_score_color_dict,
+    score_dict=risk_score_dict,
+    image_type="png",
+    figure_name="<number-or-name>",
+    analysis_name="<analysis-name>",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    width=600,
+    height=700,
 ):
     """
     Version one (in terms of design) of scattterplot showing breakdown
@@ -167,16 +167,16 @@ def create_scatter_plot_v1(
 
 
 def create_scatter_plot_v2(
-        table_df,
-        color_dict=risk_score_color_dict,
-        image_type="png",
-        figure_name="<number-or-name>",
-        analysis_name="<analysis-name>",
-        view_fig=True,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-        width=600,
-        height=700,
+    table_df,
+    color_dict=risk_score_color_dict,
+    image_type="png",
+    figure_name="<number-or-name>",
+    analysis_name="<analysis-name>",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    width=600,
+    height=700,
 ):
     """
 
@@ -257,7 +257,7 @@ def create_scatter_plot_v2(
 
 # Simulation Example Plot
 def make_scatter_trace(
-        x_value, y_value, color, symbol, name, style, dash, line_shape, fill, opacity, size
+    x_value, y_value, color, symbol, name, style, dash, line_shape, fill, opacity, size
 ):
     """
 
@@ -315,7 +315,11 @@ def make_scatter_trace(
 
 
 def make_bar_trace(
-        sim_df, x_value, y_value, marker_color, name,
+    sim_df,
+    x_value,
+    y_value,
+    marker_color,
+    name,
 ):
     """
 
@@ -433,15 +437,15 @@ def y_axis_properties(title_text):
 
 
 def create_simulation_figure(
-        sim_df,
-        image_type="png",
-        figure_name="<number-or-name>",
-        analysis_name="<analysis-name>",
-        view_fig=True,
-        save_fig=True,
-        save_fig_path=os.path.join("..", "..", "reports", "figures"),
-        width=600,
-        height=900,
+    sim_df,
+    image_type="png",
+    figure_name="<number-or-name>",
+    analysis_name="<analysis-name>",
+    view_fig=True,
+    save_fig=True,
+    save_fig_path=os.path.join("..", "..", "reports", "figures"),
+    width=600,
+    height=900,
 ):
     """
 
@@ -538,17 +542,17 @@ def create_simulation_figure(
 
     # Make and add all the traces based on style elements
     for (
-            y_field,
-            color,
-            name,
-            symbol,
-            row,
-            style,
-            dash,
-            line_shape,
-            fill,
-            opacity,
-            size,
+        y_field,
+        color,
+        name,
+        symbol,
+        row,
+        style,
+        dash,
+        line_shape,
+        fill,
+        opacity,
+        size,
     ) in zip(
         y_fields,
         colors,
@@ -606,10 +610,12 @@ def create_simulation_figure(
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Read in data file
-    insulin_pulse_file_location = os.path.join("..", "..", "data", "raw", "insulin-pulses-sample-files-2020-07-02")
+    insulin_pulse_file_location = os.path.join(
+        "..", "..", "data", "raw", "insulin-pulses-sample-files-2020-07-02"
+    )
     summary_metrics_file = "2020-07-02-06-41-20-summary.csv"
 
     summary_metrics_path = os.path.abspath(
@@ -619,32 +625,40 @@ if __name__ == '__main__':
     summary_metrics_df = pd.read_csv(summary_metrics_path)
 
     # Sort so that legend is in the right order
-    summary_metrics_df.sort_values(
-        "dka_risk_score", inplace=True
-    )
+    summary_metrics_df.sort_values("dka_risk_score", inplace=True)
 
     # Add circle size for dka risk index points
     summary_metrics_df["dka_index_circle_size"] = summary_metrics_df["dka_index"] + 1.0
 
     # Add string for risk scores for legend from dictionary
-    summary_metrics_df["dka_risk_score_str"] = summary_metrics_df["dka_risk_score"].replace(
-        risk_score_dict
-    )
+    summary_metrics_df["dka_risk_score_str"] = summary_metrics_df[
+        "dka_risk_score"
+    ].replace(risk_score_dict)
 
     # Create scatter plot figures (both version 1 design and version 2 design)
-    create_scatter_plot_v1(table_df=summary_metrics_df, x_value="sbr", y_value="loop_max_basal_rate",
-                           hover_value="dka_index", color_value_column="dka_risk_score", legend_title="DKAI Risk Score",
-                           title="DKAI Risk Score by Basal Rate", x_title="Scheduled Basal Rate",
-                           y_title="Loop Max Allowable Basal Rate", color_dict=risk_score_color_dict,
-                           score_dict=risk_score_dict,
-                           image_type="png", figure_name="summary-metrics-dkai-riskscore-scatterplot-v1",
-                           analysis_name="insulin-pulses", view_fig=True, save_fig=True, save_fig_path=os.path.join(
-            "..",
-            "..",
-            "reports",
-            "figures",
-            "insulin-pulses-risk-assessment"
-        ), width=600, height=700)
+    create_scatter_plot_v1(
+        table_df=summary_metrics_df,
+        x_value="sbr",
+        y_value="loop_max_basal_rate",
+        hover_value="dka_index",
+        color_value_column="dka_risk_score",
+        legend_title="DKAI Risk Score",
+        title="DKAI Risk Score by Basal Rate",
+        x_title="Scheduled Basal Rate",
+        y_title="Loop Max Allowable Basal Rate",
+        color_dict=risk_score_color_dict,
+        score_dict=risk_score_dict,
+        image_type="png",
+        figure_name="summary-metrics-dkai-riskscore-scatterplot-v1",
+        analysis_name="insulin-pulses",
+        view_fig=True,
+        save_fig=True,
+        save_fig_path=os.path.join(
+            "..", "..", "reports", "figures", "insulin-pulses-risk-assessment"
+        ),
+        width=600,
+        height=700,
+    )
 
     create_scatter_plot_v2(
         table_df=summary_metrics_df,
@@ -655,11 +669,7 @@ if __name__ == '__main__':
         view_fig=True,
         save_fig=False,
         save_fig_path=os.path.join(
-            "..",
-            "..",
-            "reports",
-            "figures",
-            "insulin-pulses-risk-assessment"
+            "..", "..", "reports", "figures", "insulin-pulses-risk-assessment"
         ),
         width=600,
         height=500,
@@ -690,11 +700,7 @@ if __name__ == '__main__':
                 view_fig=False,
                 save_fig=True,
                 save_fig_path=os.path.join(
-                    "..",
-                    "..",
-                    "reports",
-                    "figures",
-                    "insulin-pulses-risk-assessment"
+                    "..", "..", "reports", "figures", "insulin-pulses-risk-assessment"
                 ),
                 width=800,
                 height=1000,

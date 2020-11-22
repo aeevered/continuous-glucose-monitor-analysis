@@ -52,7 +52,9 @@ create_simulation_figure_plotly(
         "Insulin Given (as shown in Jaeb Data)",
         "Insulin Suggested (from PyLoopKit and Bolus Recommendation Tool)",
     ],
-    save_fig_path=os.path.join("..", "..", "reports", "figures", "replay_loop_animation_examples"),
+    save_fig_path=os.path.join(
+        "..", "..", "reports", "figures", "replay_loop_animation_examples"
+    ),
     figure_name="plotly_simulation_figure",
     analysis_name="replay_loop",
     animate=True,
@@ -84,7 +86,9 @@ create_simulation_figure_plotly(
         "Basal Insulin Given (Jaeb) vs. Suggested (PyLoopKit)",
         "Bolus Reported (Jaeb) vs. Suggested (Bolus Recommendation Tool)",
     ],
-    save_fig_path=os.path.join("..", "..", "reports", "figures", "replay_loop_animation_examples"),
+    save_fig_path=os.path.join(
+        "..", "..", "reports", "figures", "replay_loop_animation_examples"
+    ),
     figure_name="plotly_simulation_figure",
     analysis_name="replay_loop",
     animate=True,

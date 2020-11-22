@@ -162,7 +162,11 @@ else:
 # %% get data for russ
 make_data_sample = False
 if make_data_sample:
-    data_sample_all = pd.read_csv(file_import_path, low_memory=False, nrows=100,)
+    data_sample_all = pd.read_csv(
+        file_import_path,
+        low_memory=False,
+        nrows=100,
+    )
     bg_actual_sample = data_sample_all.loc[
         0:0, data_sample_all.columns.str.contains("bg_actual")
     ]
