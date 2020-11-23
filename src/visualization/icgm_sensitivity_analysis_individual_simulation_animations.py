@@ -71,20 +71,20 @@ def visualize_individual_icgm_analysis_simulations(
             df["filename_icgm"] == filename, "filename_baseline"
         ].iloc[0]
 
-        icgm_DKAI_RS = df.loc[
-            df["filename_icgm"] == filename, "DKAI Risk Score_icgm"
+        icgm_dkai_rs = df.loc[
+            df["filename_icgm"] == filename, "dkai_risk_score_icgm"
         ].iloc[0]
 
-        icgm_LBGI_RS = df.loc[
-            df["filename_icgm"] == filename, "LBGI Risk Score_icgm"
+        icgm_lbgi_rs = df.loc[
+            df["filename_icgm"] == filename, "lbgi_risk_score_icgm"
         ].iloc[0]
 
-        baseline_DKAI_RS = df.loc[
-            df["filename_icgm"] == filename, "DKAI Risk Score_baseline"
+        baseline_dkai_rs = df.loc[
+            df["filename_icgm"] == filename, "dkai_risk_score_baseline"
         ].iloc[0]
 
-        baseline_LBGI_RS = df.loc[
-            df["filename_icgm"] == filename, "LBGI Risk Score_baseline"
+        baseline_lbgi_rs = df.loc[
+            df["filename_icgm"] == filename, "lbgi_risk_score_baseline"
         ].iloc[0]
 
         mard_icgm = df.loc[df["filename_icgm"] == filename, "mard_icgm"].iloc[0]
@@ -148,17 +148,17 @@ def visualize_individual_icgm_analysis_simulations(
             time_range=(0, 8),
             subtitle="",
             main_title="iCGM: DKAI RS "
-            + str(icgm_DKAI_RS)
+            + str(icgm_dkai_rs)
             + ", LBGI RS "
-            + str(icgm_LBGI_RS)
+            + str(icgm_lbgi_rs)
             + ",  MARD: "
             + str(int(mard_icgm))
             + ",  Initial Bias: "
             + str(int(initial_bias_icgm))
             + " ; Baseline: DKAI RS "
-            + str(int(baseline_DKAI_RS))
+            + str(int(baseline_dkai_rs))
             + ", LBGI RS "
-            + str(int(baseline_LBGI_RS))
+            + str(int(baseline_lbgi_rs))
             + "<br>"
             + filename,
             subplot_titles=[
@@ -238,15 +238,15 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_folder_name="mard>40",
+        save_folder_name="mard_gt_40",
         filenames=animation_filenames,
     )
 
     # 2. Examples of risk score bin changes > 2 buckets
     animation_filenames = combined_df.loc[
         (
-            combined_df["LBGI Risk Score_icgm"]
-            > combined_df["LBGI Risk Score_baseline"].apply(lambda x: x + 1)
+            combined_df["lbgi_risk_score_icgm"]
+            > combined_df["lbgi_risk_score_baseline"].apply(lambda x: x + 1)
         ),
         "filename_icgm",
     ].tolist()[0:10]
@@ -259,14 +259,14 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_folder_name="LBGI_2_risk_bin_jumps",
+        save_folder_name="lbgi_2_risk_bin_jumps",
         filenames=animation_filenames,
     )
 
     # 3. Examples of really high LBGI
 
     animation_filenames = combined_df.loc[
-        (combined_df["LBGI Difference"] > 8), "filename_icgm"
+        (combined_df["lbgi_difference"] > 8), "filename_icgm"
     ].tolist()[0:10]
 
     print("High LBGI files:" + str(animation_filenames))
@@ -277,14 +277,14 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_folder_name="LBGI_difference>8",
+        save_folder_name="lbgi_difference_gt_8",
         filenames=animation_filenames,
     )
 
     # 4. low bias high risk
 
     animation_filenames = combined_df.loc[
-        ((combined_df["LBGI Difference"] > 6) & (combined_df["initial_bias_icgm"] < 5)),
+        ((combined_df["lbgi_difference"] > 6) & (combined_df["initial_bias_icgm"] < 5)),
         "filename_icgm",
     ].tolist()[0:10]
 
@@ -300,7 +300,7 @@ def create_visualizations_of_sims_with_particular_criteria(
     # 5. High MARD low risk
 
     animation_filenames = combined_df.loc[
-        ((combined_df["LBGI Difference"] < 1) & (combined_df["mard_icgm"] > 30)),
+        ((combined_df["lbgi_difference"] < 1) & (combined_df["mard_icgm"] > 30)),
         "filename_icgm",
     ].tolist()[0:10]
 
@@ -318,6 +318,10 @@ def create_visualizations_of_sims_with_particular_criteria(
 
 if __name__ == "__main__":
 
+    # Add the name of the combined dataframe corresponding to the results files want to show
+    combined_df_filename = "pairwise_comparison-combined_df_icgm-sensitivity-analysis-results-2020-11-02-" \
+                           "nogit_icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-03-11-30_v0-1-0.csv"
+
     # Specify the iCGM data filepath
     icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
     results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
@@ -328,8 +332,10 @@ if __name__ == "__main__":
         "..", "..", "data", "raw", ideal_sensor_folder_name
     )
 
-    # Set where to save figures
-    save_fig_folder_name = icgm_folder_name
+    # Save folder name
+    save_fig_folder_name = "{}_{}".format(
+        icgm_folder_name, ideal_sensor_folder_name
+    )
 
     # Specify where to save files
     results_save_fig_path = os.path.join(
@@ -338,7 +344,7 @@ if __name__ == "__main__":
         "reports",
         "figures",
         "icgm-sensitivity-paired-comparison-figures",
-        icgm_folder_name,
+        save_fig_folder_name,
     )
 
     # Load in combined df
@@ -346,11 +352,11 @@ if __name__ == "__main__":
         os.path.join(
             "..",
             "..",
-            "reports",
-            "figures",
-            "icgm-sensitivity-paired-comparison-figures",
+            "data",
+            "processed",
+            "icgm-sensitivity-analysis-aggregate-tables-nogit",
             save_fig_folder_name,
-            "pairwise_comparison_combined_df_" + save_fig_folder_name + ".csv",
+            combined_df_filename,
         )
     )
 
