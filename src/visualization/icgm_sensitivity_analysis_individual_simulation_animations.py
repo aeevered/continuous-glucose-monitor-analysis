@@ -238,8 +238,8 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="mard>40",
-        animation_filenames=animation_filenames,
+        save_folder_name="mard>40",
+        filenames=animation_filenames,
     )
 
     # 2. Examples of risk score bin changes > 2 buckets
@@ -259,8 +259,8 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="LBGI_2_risk_bin_jumps",
-        animation_filenames=animation_filenames,
+        save_folder_name="LBGI_2_risk_bin_jumps",
+        filenames=animation_filenames,
     )
 
     # 3. Examples of really high LBGI
@@ -277,8 +277,8 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="LBGI_difference>8",
-        animation_filenames=animation_filenames,
+        save_folder_name="LBGI_difference>8",
+        filenames=animation_filenames,
     )
 
     # 4. low bias high risk
@@ -293,8 +293,8 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="low_bias_high_risk",
-        animation_filenames=animation_filenames,
+        save_folder_name="low_bias_high_risk",
+        filenames=animation_filenames,
     )
 
     # 5. High MARD low risk
@@ -309,8 +309,8 @@ def create_visualizations_of_sims_with_particular_criteria(
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="high_mard_low_risk",
-        animation_filenames=animation_filenames,
+        save_folder_name="high_mard_low_risk",
+        filenames=animation_filenames,
     )
 
     return
@@ -365,8 +365,8 @@ if __name__ == "__main__":
         icgm_path=results_files_path,
         baseline_path=baseline_files_path,
         save_fig_path=results_save_fig_path,
-        save_fig_folder_name="other_misc_scenarios",
-        animation_filenames=filenames,
+        save_folder_name="other_misc_scenarios",
+        filenames=filenames,
     )
 
     # Create visualizations based on particular simulation criteria

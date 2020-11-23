@@ -1,5 +1,20 @@
 __author__ = "Anne Evered"
 
+# This file contains functions for generating figures used in exploratory analysis of
+# iCGM Sensitivity Analysis results.
+#
+# This includes a number of different visualization for checking different aspects of the results
+# and all of the figures that were previously made for the non-pairwise version of this analysis.
+#
+# The relevant code for final report figures has
+# been moved to icgm_sensitivity_analysis_report_figures_and_tables.py. The code
+# in this longer exploratory analysis file is no longer being maintained but
+# has been left as is, in case a similar exploratory
+# analysis is conducted at some point or these visualization functions are useful for
+# adding to a data science viz-tools.
+
+#
+
 # %% REQUIRED LIBRARIES
 import os
 import pandas as pd
@@ -13,24 +28,30 @@ import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
 from plotly.subplots import make_subplots
-from src.visualization.simulation_figures_shared_functions import (
-    data_loading_and_preparation,
-)
-from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
 import plotly.figure_factory as ff
 
-# from tidepool_data_science_models.models.icgm_sensor_generator_functions import (
-#     calc_mard,
-#     preprocess_data,
-#     calc_mbe,
-#     calc_icgm_sc_table,
-#     calc_icgm_special_controls_loss,
-# )
 
 utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 
-# Calculate MBE and MARD (https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py)
+
+# Calculate MBE and MARD
+# (https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py)
+
+
 def add_error_fields(df):
+    """
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to add error fields to (for use in MARD and MBE calculations)
+
+    Returns
+    -------
+    df: dataframe
+        dataframe with new error field columns
+
+    """
     # default icgm and ysi ranges [40, 400] and [0, 900]
     sensor_bg_range = (40, 400)
     bg_range = (0, 900)
@@ -55,16 +76,41 @@ def add_error_fields(df):
 
 
 def calc_mbe(df):
+    """
 
-    # default icgm and ysi ranges [40, 400] and [0, 900]
+    Calculate mean bias
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to calculate mean bias error (MBE) from
+
+    Returns
+    -------
+    mean bias error calculation
+
+    """
+
+    # Default icgm and ysi ranges [40, 400] and [0, 900]
 
     df = add_error_fields(df)
     return np.mean(df.loc[df["withinMeasRange"], "icgmError"])
 
 
 def calc_mard(df):
-    """Mean Absolute Relative Deviation (MARD)
+    """
+    Calculate Mean Absolute Relative Deviation (MARD)
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5375072/
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to calculate mean absolute relative deviation (MARD) from
+
+    Returns
+    -------
+    mard calculation
+
     """
 
     df = add_error_fields(df)
@@ -77,6 +123,21 @@ def calc_mard(df):
 
 # Parse out simulation id
 def get_sim_id(patient_characteristics_df, filename):
+    """
+
+    Parse out simulation ID from the filename and patient characteristics data frame
+
+    Parameters
+    ----------
+    patient_characteristics_df: dataframe
+        dataframe of patient characteristics
+    filename: str
+        filename corresponding to the simulation
+
+    Returns
+    -------
+
+    """
     sensor_num = (
         filename.split("/")[-1]
         .split(".")[2]
@@ -109,6 +170,26 @@ def get_sim_id(patient_characteristics_df, filename):
 def get_data_old_format(
     filename, simulation_df, patient_characteristics_df, sensor_characteristics_df=""
 ):
+    """
+
+    Returns a list of data for simulation dataframes that are in the old data format.
+
+    Parameters
+    ----------
+    filename: str
+        name of file corresponding
+    simulation_df: dataframe
+        dataframe of the particular simulation want to return data for
+    patient_characteristics_df: dataframe
+        dataframe of patient characteristics
+    sensor_characteristics_df: dataframe
+        dataframe of sensor characteristics
+
+    Returns
+    -------
+    list of data items that will be a row in aggregated summary dataframe
+
+    """
     sim_id = get_sim_id(patient_characteristics_df, filename)
     virtual_patient_num = "vp" + str(
         patient_characteristics_df["patient_scenario_filename"]
@@ -230,6 +311,26 @@ def get_data_old_format(
 def get_data(
     filename, simulation_df, simulation_characteristics_json_data, baseline=False
 ):
+    """
+
+    Returns a list of data from the simulation files that are in the new format
+
+    Parameters
+    ----------
+    filename: str
+        name of file corresponding
+    simulation_df: dataframe
+        dataframe of the particular simulation want to return data for
+    simulation_characteristics_json_data: dataframe
+        json simulation characteristics data corresponding to that simulaton
+    baseline: bool
+        whether this particular file is a baseline file
+
+    Returns
+    -------
+    list of data items that will be a row in aggregated summary dataframe
+
+    """
     sim_id = simulation_characteristics_json_data["sim_id"]
     virtual_patient_num = simulation_characteristics_json_data["sim_id"].split(".")[0]
     sensor_num = filename.split(".")[2]
@@ -388,13 +489,39 @@ utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 # TODO: automatically grab the code version to add to the figures generated
 code_version = "v0-1-0"
 
-# adding in some generic methods for tables based on bins
+
+# Adding in some generic methods for tables based on bins
 def bin_data(bin_breakpoints):
+    """
+
+    Parameters
+    ----------
+    bin_breakpoints: array-like
+        Array-like containing Interval objects from which to build the IntervalIndex.
+
+    Returns
+    -------
+    interval index
+
+    """
     # the bin_breakpoints are the points that are greater than or equal to
     return pd.IntervalIndex.from_breaks(bin_breakpoints, closed="left")
 
 
 def get_metadata_tables(demographic_df, fig_path):
+    """
+
+    Parameters
+    ----------
+    demographic_df: dataframe
+        dataframe of demographic characteristics (age, ylw) for patient corresponding to simulation
+    fig_path: str
+        filepath of where to save the tables
+
+    Returns
+    -------
+
+    """
     # %% prepare demographic data for tables
 
     virtual_patient_group = demographic_df.groupby("virtual_patient_num")
@@ -626,6 +753,38 @@ def make_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Parameters
+    ----------
+    table_df: dataframe
+        dataframe for making the table from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    table_name: str
+        name to use for the table when saving the figure
+    analysis_name: str
+        name of the analysis this table is associated with
+    cell_height: sized
+        height of the cells in the table
+    cell_width: sized
+        width of the cells in the table
+    cell_header_height: sized
+        height of the header cells in the table
+    view_fig: bool
+        whether or not to view the table (opens in browser)
+    save_fig: bool
+        whether or not to save the table
+    save_csv: bool
+        whether to save the table contents as a csv
+    save_fig_path: str
+        file path for where to save the figure
+
+
+    Returns
+    -------
+
+    """
     # TODO: reduce the number of inputs to: df, style_dict, and save_dict
     table_cols = table_df.columns
     n_rows, n_cols = table_df.shape
@@ -673,20 +832,6 @@ def make_table(
         height=table_height,
     )
 
-    """
-    if view_fig:
-        plot(fig)
-
-    file_name = "{}-{}_{}_{}".format(
-        analysis_name, table_name, utc_string, code_version
-    )
-    if save_fig:
-        pio.write_image(
-            fig=fig,
-            file=os.path.join(save_fig_path, file_name + ".{}".format(image_type)),
-            format=image_type,
-        )
-    """
     file_name = "{}-{}_{}_{}".format(
         analysis_name, table_name, utc_string, code_version
     )
@@ -711,20 +856,37 @@ def make_boxplot(
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
     """
-    Create a boxplot figure.
 
-    :param table_df: Table name of data to visualize.
-    :param image_type: Image type for saving image (eg. png, jpeg).
-    :param figure_name: Name of figure (for name of file for saving figure).
-    :param analysis_name: Name of analysis (for name of file for saving figure).
-    :param metric: Metric from table_df to visualize on the y-axis.
-    :param level_of_analysis: Level of analysis breakdown ("all", "bg_test_condition", etc.) for x-axis.
-    :param notched_boxplot: True if want the boxplot to be notched boxplot style.
-    :param y_scale_type: Log or linear for y axis scale.
-    :param view_fig: True if want to view figure.
-    :param save_fig: True if want to save figure.
-    :param save_fig_path: File path for where to save figure.
-    :return:
+    Creates a boxplot (either single boxplot or broken down by analysis level) for a given metric
+
+    Parameters
+    ----------
+    table_df: dataframe
+        dataframe of data to pull from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    figure_name: str
+        name to use for figure
+    analysis_name: str
+        name of the analysis this table is associated with
+    metric: str
+        metric column to use
+    level_of_analysis: str
+        which level of analysis to use for breakdown of boxplots
+    notched_boxplot: bool
+        whether to make a notched boxplot
+    y_scale_type: str
+        type ("log","linear") for y-axis
+    view_fig: bool
+        whether or not to view the figure (opens in browser)
+    save_fig: bool
+        whether or not to save the figure
+    save_fig_path: str
+        file path for where to save the figure
+
+    Returns
+    -------
+
     """
 
     # If level_of_analysis is to show all analyses (no breakdown), show as single box.
@@ -804,6 +966,36 @@ def make_bubble_plot(
     save_fig=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Creates a "stoplight" like plot showing the distribution of the simulations
+    across the different risk score bins (for example, for DKAI risk score).
+
+    Parameters
+    ----------
+    table_df: dataframe
+        dataframe for making the figure from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    figure_name: str
+        name to use for the figure when saving
+    analysis_name: str
+        name of the analysis this figure is associated with
+    metric
+        metric column to use
+    level_of_analysis: str
+        which level of analysis to use for breakdown of boxplots
+    view_fig: bool
+        whether or not to view the figure (opens in browser)
+    save_fig: bool
+        whether or not to save the figure
+    save_fig_path: str
+        file path for where to save the figure
+
+    Returns
+    -------
+
+    """
     if level_of_analysis == "all":
 
         df = table_df[[metric, metric + " String"]]
@@ -1013,6 +1205,35 @@ def make_histogram(
     save_fig=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Makes a histogram for a particular metric and level of analysis
+
+    Parameters
+    ----------
+    table_df: dataframe
+        dataframe for making the figure from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    figure_name: str
+        name to use for the figure when saving
+    analysis_name: str
+        name of the analysis this figure is associated with
+    metric: str
+        metric column to use
+    level_of_analysis: str
+        which level of analysis to use for breakdown of histograms
+    view_fig: bool
+        whether or not to view the figure (opens in browser)
+    save_fig: bool
+        whether or not to save the figure
+    save_fig_path: str
+        file path for where to save the figure
+
+    Returns
+    -------
+
+    """
     if level_of_analysis == "all":
 
         df = table_df[[metric]]
@@ -1105,6 +1326,38 @@ def make_distribution_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Create a table showing the distribution of results broken down acorss particular
+    analysis types.
+
+    Parameters
+    ----------
+    table_df: dataframe
+        dataframe for making the table from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    table_name: str
+        name to use for the table when saving
+    analysis_name: str
+        name of the analysis this table is associated with
+    metric: str
+        metric column to use
+    level_of_analysis: str
+        which level of analysis to use for breakdown of tables
+    view_fig: bool
+        whether or not to view the table (opens in browser)
+    save_fig: bool
+        whether or not to save the table
+    save_csv: bool
+        whether or not to save a csv of the table contents
+    save_fig_path: str
+        file path for where to save the table
+
+    Returns
+    -------
+
+    """
 
     if level_of_analysis == "all":
         df = table_df[[metric]]
@@ -1121,9 +1374,6 @@ def make_distribution_table(
         distribution_df.iloc[:, 0] = distribution_df.iloc[:, 0].apply(
             lambda x: "BG Test Condition {}".format(x)
         )
-        # ret = distribution_df.index.map(lambda x: "BG Test Condition {}".format(x))
-        # distribution_df.insert(1, "", ret, True)
-        # distribution_df.columns = distribution_df.columns.droplevel(0)
 
     distribution_df = distribution_df.round(2)
 
@@ -1162,6 +1412,19 @@ def make_distribution_table(
 
 # %% Summary Table
 def prepare_results_for_summary_table(results_df):
+    """
+
+    Prepare results for creation of a summary table of the results.
+
+    Parameters
+    ----------
+    results_df: dataframe
+        dataframe of results to use
+
+    Returns
+    -------
+
+    """
 
     # %% first remove any/all iCGM sensor batches that did not meet iCGM special controls
 
@@ -1204,6 +1467,20 @@ def prepare_results_for_summary_table(results_df):
 
 
 def get_summary_stats(df, level_of_analysis_name):
+    """
+    Get summary stats.
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to get summary stats from
+    level_of_analysis_name: str
+        what level of analysis breakdown to use
+
+    Returns
+    -------
+
+    """
 
     # Commented out risk score columsn pending whether want to show
     # median values for the categorical risk score measures
@@ -1255,6 +1532,28 @@ def make_frequency_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Parameters
+    ----------
+    results_df
+    image_type
+    table_name
+    analysis_name
+    cell_header_height
+    cell_height
+    cell_width
+    metric
+    level_of_analysis
+    view_fig
+    save_fig
+    save_csv
+    save_fig_path
+
+    Returns
+    -------
+
+    """
     level_of_analysis_dict = {
         "all": "All Analyses Combined",
         "analysis_type": "Analysis Type",
@@ -1343,6 +1642,19 @@ def make_frequency_table(
 
 # Functions of cdfs
 def ecdf(x):
+
+    """
+    Helper function for empirical cumulative distribution function graph.
+
+    Parameters
+    ----------
+    x: array
+        array to apply ecdf to
+
+    Returns
+    -------
+
+    """
     x = np.sort(x)
 
     def result(v):
@@ -1361,6 +1673,25 @@ def create_cdf(
     save_fig=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Create cumulative distribution graph
+
+    Parameters
+    ----------
+    data
+    title
+    image_type
+    figure_name
+    analysis_name
+    view_fig
+    save_fig
+    save_fig_path
+
+    Returns
+    -------
+
+    """
 
     fig = go.Figure()
     fig.add_scatter(x=np.unique(data), y=ecdf(data)(np.unique(data)))
@@ -1392,7 +1723,39 @@ def spearman_correlation_table(
     save_csv=True,
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
 
+    Function for create a spearment correlation coefficient table
+
+    Parameters
+    ----------
+    results_df: dataframe
+        dataframe pulling from for data to calculate spearman correlation coefficients from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    table_name: str
+        name to use for the table when saving the figure
+    analysis_name: str
+        name of the analysis this table is associated with
+    cell_header_height: sized
+        height of the header cells in the table
+    cell_height: sized
+        height of the cells in the table
+    cell_width: sized
+        width of the cells in the table
+    view_fig: bool
+        whether or not to view the table (opens in browser)
+    save_fig: bool
+        whether or not to save the table
+    save_csv: bool
+        whether to save the table contents as a csv
+    save_fig_path: str
+        file path for where to save the figure
+
+    Returns
+    -------
+
+    """
     rows = [
         "bias_factor",
         "bias_drift_oscillations",
@@ -1458,6 +1821,39 @@ def create_scatter(
     fig_name="",
     save_fig_path=os.path.join("..", "..", "reports", "figures"),
 ):
+    """
+
+    Generic function for creating and saving a plotly express scatterplot.
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe want to create scatter plot from
+    x_value: str
+        column from that dataframe want to use for x value
+    y_value: str
+        column from that dataframe want to use for y value
+    color_value: str
+        column from that dataframe want to use for color value
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    analysis_name: str
+        name of the analysis this scatterplot is associated with (ex. "icgm_sensitivity_analysis"
+    view_fig: bool
+        whether or not to view the figure
+    save_fig: bool
+        whether or not to savve the figure
+    title: str
+        title of the figure
+    fig_name: str
+        name of the figure
+    save_fig_path: str
+        path to save the figure at
+
+    Returns
+    -------
+
+    """
 
     if color_value != "":
         df = df.sort_values(by=color_value, ascending=True)
@@ -1491,6 +1887,21 @@ def create_scatter(
 def generate_all_check_distribution_scatterplots(
     df, fig_path=os.path.join("..", "..", "reports", "figures")
 ):
+    """
+
+    Generate a set of scatter plots to check the distributions
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to use for figures
+    fig_path: str
+        file path to use for saving figures
+
+    Returns
+    -------
+
+    """
     settings = ["CIR", "ISF", "SBR"]
     outcome_metrics = ["LBGI", "DKAI", "HBGI"]
     sensor_characteristics = [
@@ -1552,7 +1963,7 @@ def generate_all_check_distribution_scatterplots(
             y_value=y,
             title="Distribution of " + y + " by " + x + "<br>Where SBR < 0.5",
             fig_name="distribution_" + y + "_" + x + "_sbr<0.5",
-            save_fig_path=save_fig_path,
+            save_fig_path=fig_path,
         )
         create_scatter(
             df=rest_results_df,
@@ -1629,6 +2040,22 @@ def generate_all_check_distribution_scatterplots(
 
 
 def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
+    """
+
+    Parameters
+    ----------
+    results_df: dataframe
+        dataframe for where the results (icgm) data is stored
+    baseline_df: dataframe
+        dataframe for where the baseline (ideal sensor) data is stored
+    save_fig_folder_name: str
+        name of the folder to save figures in
+
+    Returns
+    -------
+
+    """
+
     # Add ratio to each row
     # Need to look up for each row into the baseline_df by virtual patient and by
     fig_path = os.path.join(
@@ -1706,6 +2133,24 @@ def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
 
 
 def run_pairwise_comparison_figures(save_fig_folder_name):
+    """
+
+    Create a set of figures for viewing and analyzing the results of the pairwise comparison.
+
+    There are a bunch of figures commented out that can be uncommented if needed.
+
+    Additional figures can be added to this function as needed for further
+    exploratory analysis and final analysis report.
+
+    Parameters
+    ----------
+    save_fig_folder_name: str
+        name of folder to save figures to and also to pull data from
+
+    Returns
+    -------
+
+    """
 
     fig_path = os.path.join(
         "..",
@@ -1785,6 +2230,21 @@ def run_pairwise_comparison_figures(save_fig_folder_name):
 
 
 def create_paired_comparison_histogram_kde(df, fig_path, color_value=""):
+    """
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe using to create histogram
+    fig_path: str
+        path to save figure at
+    color_value: str
+        what field to use for color value
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -1870,6 +2330,19 @@ def create_paired_comparison_histogram_kde(df, fig_path, color_value=""):
 
 
 def print_counts_simulations_different_criteria(df):
+    """
+    used for testing
+    prints counts of simulations with different criteria
+
+    Parameters
+    ----------
+    df: dataframe
+        what dataframe to check data in
+
+    Returns
+    -------
+
+    """
 
     filenames = df.loc[
         (
@@ -1898,6 +2371,24 @@ def print_counts_simulations_different_criteria(df):
 
 
 def create_table_paired_risk_score_bins(df, fig_path):
+    """
+
+    Creates a set of crosstab tables showing the count and percentage of scenarios
+    that started in each particular risk score bin (for a given metric) and switched
+    to a different particular bin. Saves those tables
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe using to create the risk score bin tables
+    fig_path: str
+        file path to save the tables to
+
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2042,6 +2533,23 @@ def create_table_paired_risk_score_bins(df, fig_path):
 
 
 def create_sensor_characteristic_scatters(df, fig_path):
+    """
+
+    Create a set of scatterplots to see the bivariate distribution of the
+    sensor characteristics (i.e. how noise varies by across the sensor biases from the fitting)
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe that contains the sensor characteristics (i.e. combined results dataframe)
+    fig_path: str
+        file path to save the figures to
+
+    Returns
+    -------
+
+    """
+
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2094,6 +2602,17 @@ def create_sensor_characteristic_scatters(df, fig_path):
 
 
 def create_paired_comparison_bivariate_sensor_characteristic_scatter(df, fig_path):
+    """
+
+    Parameters
+    ----------
+    df
+    fig_path
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2249,6 +2768,21 @@ def create_paired_comparison_bivariate_sensor_characteristic_scatter(df, fig_pat
 
 
 def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""):
+    """
+
+    Parameters
+    ----------
+    combined_df: dataframe
+        dataframe to make scatterplots from
+    fig_path: str
+        file path to save figures at
+    color_value: str
+        what field to use for color for plots (i.e. for a third dimension)
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2305,6 +2839,21 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
 
 
 def create_paired_comparison_box_plots(combined_df, fig_path):
+    """
+
+    Create boxplots for viewing paired comparison results.
+
+    Parameters
+    ----------
+    combined_df: dataframe
+        dataframe to use for displaying data
+    fig_path: str
+        filepath to use for saving figures
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2358,6 +2907,24 @@ def create_paired_comparison_box_plots(combined_df, fig_path):
 def create_paired_comparison_by_analysis_level_scatter_plots(
     combined_df, fig_path, analysis_level="analysis_type_label"
 ):
+    """
+
+    Create a set of scatter plots showing the distribution of comparison risk metrics by sensor
+    characteristic and how this changes across the categories in an analysis level (bg test condition, analysis type)
+
+    Parameters
+    ----------
+    combined_df: dataframe
+        dataframe of combined results
+    fig_path: str
+        file path for saving figures
+    analysis_level: str
+        analysis level want to see the scatter plot comparison for
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2487,6 +3054,22 @@ def create_paired_comparison_by_analysis_level_scatter_plots(
 
 
 def create_paired_comparison_by_sensor_scatter_plots(combined_df, fig_path):
+    """
+
+    Create a set of scatter plots showing the distribution of comparison risk metrics by sensor
+    characteristic and how this changes across the sensor numbers.
+
+    Parameters
+    ----------
+    combined_df: dataframe
+        dataframe of combined results
+    fig_path: str
+        file path for saving figures
+
+    Returns
+    -------
+
+    """
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
@@ -2662,6 +3245,20 @@ def create_paired_comparison_by_sensor_scatter_plots(combined_df, fig_path):
 
 
 def create_sensor_characteristics_table(df, fig_path):
+    """
+    Table of sensor characteristics.
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe of combined results
+    fig_path: str
+        file path for saving figures
+
+    Returns
+    -------
+
+    """
     columns = [
         "sensor_num_icgm",
         "initial_bias_icgm",
@@ -2697,6 +3294,21 @@ def create_sensor_characteristics_table(df, fig_path):
 def generate_all_results_figures(
     df, fig_path=os.path.join("..", "..", "reports", "figures")
 ):
+    """
+
+    Generate all of the results figures
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe of combined results
+    fig_path: str
+        file path for saving figures
+
+    Returns
+    -------
+
+    """
     # Create Spearman Correlation Coefficient Table
     spearman_correlation_table(df, save_fig_path=fig_path)
 
@@ -2828,6 +3440,24 @@ def generate_all_results_figures(
 
 
 def settings_outside_clinical_bounds(cir, isf, sbr):
+    """
+
+    Identifies whether any of the settings are outside clinical bounds (based on medical advisory)
+
+    Parameters
+    ----------
+    cir: float
+        carb to insulin ratio for the particular scenario
+    isf: float
+        insulin sensitivity factor for the particular scenario
+    sbr:float
+        scheduled basal rate for the particular scenario
+
+    Returns
+    -------
+    a boolean for whether any of the settings fall outside of the clinical bounds criteria as defined in the function
+
+    """
 
     return (
         (float(isf) < 10)
@@ -2853,19 +3483,33 @@ def create_data_frame_for_figures(
     ),
     is_baseline=False,
 ):
-    # scenarios_outside_clinical_bounds_df = pd.read_csv(
-    #     os.path.join(
-    #         "..", "..", "data", "raw", "scenarios_outside_clinical_bounds.csv"
-    #     )
-    # )
-    # vp_outside_clinical_bounds = list(
-    #     scenarios_outside_clinical_bounds_df[
-    #         "scenarios_with_settings_outside_clinical_bounds"
-    #     ].apply(lambda x: x.split("_")[1].split(".")[0])
-    # )
-    #
-    # print("vp id outside clinical bounds: " + str(vp_outside_clinical_bounds))
+    """
 
+    Create an aggregate dataframe of the simulation results (for either baseline or iCGM) for
+    use in creating figures and analysing the results. Save those aggregated dataframes as csvs.
+
+    Parameters
+    ----------
+    old_format: bool
+        whether the data is in the old format
+    patient_characteristics_path: str
+        filepath of where patient characteristics are
+    results_path: str
+        path to where the results want to create dataframe for are
+    save_path: str
+        file path of outer folder for where to save the csvs of the aggregated dataframes to
+    results_folder_name: str
+        name of the folder that the results are located in (to be used in title of csvs saved)
+    is_baseline: bool
+        whether or not this results set is for the baseline (vs. icgm)
+        slightly different loading of data for baseline
+
+    Returns
+    -------
+    dataframe of aggregated results
+
+    """
+    data = []
     if old_format:
         for i, filename in enumerate(sorted(os.listdir(results_path))):  # [0:100]):
             if filename.endswith(".csv"):
@@ -3048,19 +3692,6 @@ def create_data_frame_for_figures(
 
     results_df = pd.DataFrame(data, columns=columns)
 
-    # Exclude scenarios that were found to not meet the special controls (leaving this code in case end up needing again)
-    # special_controls_pass_rate_df = pd.read_csv(os.path.join("..", "..", "data", "raw", "icgm-sensitivity-analysis-scenarios-2020-07-10-nogit", "percent_pass_per_scenario_icgm-sensitivity-analysis-scenarios-2020-07-10-nogit.csv"))
-    # scenarios_meeting_special_controls = special_controls_pass_rate_df[special_controls_pass_rate_df["percent_pass"] == 100]["training_scenario_filename"].unique()
-
-    # print(results_df.shape)
-    # print(scenarios_meeting_special_controls)
-    # print(len(scenarios_meeting_special_controls))
-    # print(all_results_df["patient_scenario_filename"][0:10])
-
-    # results_df = all_results_df[all_results_df["patient_scenario_filename"].isin(scenarios_meeting_special_controls)]
-
-    # print(results_df.shape)
-
     results_df = clean_up_results_df(results_df)
 
     results_df.to_csv(
@@ -3072,6 +3703,17 @@ def create_data_frame_for_figures(
 
 
 def clean_up_results_df(results_df):
+    """
+
+    Parameters
+    ----------
+    results_df: dataframe
+        dataframe to clean up
+
+    Returns
+    -------
+
+    """
 
     results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
 
@@ -3123,77 +3765,63 @@ level_of_analysis_dict = {
     "bg_test_condition": "BG Test Condition",
 }
 
-#### LOAD IN DATA #####
+if __name__ == "__main__":
 
-# Load in the iCGM Data
-data = []
-icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
-results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
+    #### LOAD IN DATA #####
 
-# Set where to save figures
-save_fig_folder_name = icgm_folder_name
+    # Specify this parameter based on whether want to load the data and run the figures
+    # or just run the figures
+    data_already_loaded = True
 
-results_save_fig_path = os.path.join(
-    "..",
-    "..",
-    "reports",
-    "figures",
-    "icgm-sensitivity-paired-comparison-figures",
-    save_fig_folder_name,
-)
+    # Specify the iCGM data filepath
+    icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
+    results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
 
-not_pairwise_save_fig_path = os.path.join(
-    "..",
-    "..",
-    "reports",
-    "figures",
-    "icgm-sensitivity-analysis-results-figures",
-    save_fig_folder_name,
-)
+    # Specify the Baseline data fildepath
+    ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
+    baseline_files_path = os.path.join(
+        "..", "..", "data", "raw", ideal_sensor_folder_name
+    )
 
-if not os.path.exists(results_save_fig_path):
-    print("making directory " + results_save_fig_path + "...")
-    os.makedirs(results_save_fig_path)
+    # Set where to save figures
+    save_fig_folder_name = icgm_folder_name
 
-# icgm_results_df = create_data_frame_for_figures(
-#     results_path=results_files_path,
-#     old_format=False,
-#     save_path=results_save_fig_path,
-#     results_folder_name=icgm_folder_name,
-# )
+    results_save_fig_path = os.path.join(
+        "..",
+        "..",
+        "reports",
+        "figures",
+        "icgm-sensitivity-paired-comparison-figures",
+        save_fig_folder_name,
+    )
 
+    if not os.path.exists(results_save_fig_path):
+        print("making directory " + results_save_fig_path + "...")
+        os.makedirs(results_save_fig_path)
 
-# Load in the Ideal Sensor Data
-data = []
-ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
-baseline_files_path = os.path.join("..", "..", "data", "raw", ideal_sensor_folder_name)
+    # Load in the data (uncomment this section if data not previously loaded for desired files)
 
-# baseline_sensor_df = create_data_frame_for_figures(
-#     is_baseline = True,
-#     results_path=baseline_files_path,
-#     old_format=False,
-#     save_path=results_save_fig_path,
-#     results_folder_name=ideal_sensor_folder_name,
-# )
+    if not data_already_loaded:
+        icgm_results_df = create_data_frame_for_figures(
+            results_path=results_files_path,
+            save_path=results_save_fig_path,
+            results_folder_name=icgm_folder_name,
+            old_format=False,
+        )
 
-# If want to load in the ideal sensors again, otherwise use above
-# baseline_sensor_df = pd.read_csv(os.path.join(save_path, ideal_sensor_folder_name + "_results_df.csv"))
+        baseline_sensor_df = create_data_frame_for_figures(
+            is_baseline=True,
+            results_path=baseline_files_path,
+            save_path=results_save_fig_path,
+            results_folder_name=ideal_sensor_folder_name,
+            old_format=False,
+        )
+        run_pairwise_comparison(
+            results_df=icgm_results_df,
+            baseline_df=baseline_sensor_df,
+            save_fig_folder_name=save_fig_folder_name,
+        )
 
-#### CREATE FIGURES #####
-
-# Create all check distribution figures
-# generate_all_check_distribution_scatterplots(icgm_results_df, fig_path=save_fig_path)
-
-# Create all results figures (not pairwise) from the baseline df
-# generate_all_results_figures(baseline_sensor_df, fig_path=results_save_fig_path)
-
-
-# Create all results figures (not pairwise) from the results data frame
-icgm_results_df = pd.read_csv(
-    os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv")
-)
-generate_all_results_figures(icgm_results_df, fig_path=results_save_fig_path)
-
-# Create pairwise figures
-# run_pairwise_comparison(results_df=icgm_results_df, baseline_df=baseline_sensor_df, save_fig_folder_name=save_fig_folder_name)
-# run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
+    else:
+        # Just create the figures (loads in the already existing combined_df)
+        run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)

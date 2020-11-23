@@ -1,33 +1,33 @@
 # Figures for Data Science Risk Analyses
 
-
-#### -- Project Status: [Active]
-#### -- Project Disclaimer: This work is for [Exploration]
+#### -- Project Status: Active
+#### -- Project Disclaimer: This work is for Exploration
  ## Project Objective
-The purpose of this project is to create figures, tables, and animation for exploratory analysis of Tidepool Data Science
-Team risk analyses results. 
- This includes:
-- Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
-- iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
-- Replay Loop Analyses (replay-loop-animations.py)
-
-This file also includes generalized code for
-visualizing simulation results 
-
-
-![](simulation_example_gif.gif)
+The purpose of this project is to create figures, tables, and animation for exploratory 
+analysis of Tidepool Data Science Team risk analyses results. 
 
 ## Definition of Done
 This phase of the project will be done when exploratory analysis for these projects is completed and final figures are 
 approved. This project can then become a more permanent (non-exploratory) repository for final report figures.
 
 ## Project Description
-This project is for creating different figures for exploratory analysis 
+This project includes:
+- Figure code for the analysis of **missed insulin pulses** (`insulin_pulses_animation.py`, `insulin_pulses_figures.py`)
 
-This includes:
-- Missed insulin pulses analysis (insulin_pulses_animation.py, insulin_pulses_figures.py)
-- iCGM Sensitivity Analysis (icgm_sensitivity_analysis_report_figures.py, icgm_sensitivity_analysis_figures_and_tables.py)
-- Replay Loop Analyses (replay-loop-animations.py)
+- **Replay loop exploratory figure code** (`replay_loop_exploratory_figure_examples.py`). 
+This code is very work and progress and left just in case anyone goes back to thinking about ways to visualize that.
+
+- **Code for iCGM sensitivity analysis figures**, including the code used for exploratory analysis 
+(labeled [ARCHIVE]) and a more recent and up to date file that can be run for aggregated data 
+and figures for the iCGM sensitivity analysis (`icgm_sensitivity_analysis_report_figures_and_tables.py`).
+
+- Generalized visualization **code for creating matplotlib and plotly 
+animations/static visualizations of simulation output** that more or less match
+Tidepool style guidelines. Files for those visualizations include `simulation_figure_matplotlib.py`, `simulation_figure_plotly.py`, 
+`simulation_figures_shared_functions`, `simulation_figures_demo_examples`. 
+Example output of the demo code is shown below.
+
+![](simulation_example_gif.gif)
 
 ### Technologies (Update this list)
 * Python (99% of the time)
@@ -71,11 +71,15 @@ This may also make it easier to convert existing packages into pypi packages. We
 in conda using the conda-environment.yml file when packages are not available via pip (e.g., R and plotly-orca).
 
 ## Getting Started with this project
-1. Raw Data is being kept:
-    - [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
-    - All other data 
-    loop_replay-nogit.csv for replay_loop_exploratory_figure_examples.py
-    risk_scenarios_do_nothing.csv and risk_scenarios_PyLoopkit v0.1.csv for simulation_figures_demo_examples.py
+Raw Data is being kept [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
+
+The rest of the data, if not already in the repository, can be found on Google Drive at
+[sample_data_for_data-science--explore--risk-sim-figures](https://drive.google.com/drive/folders/1IFIbc0Z6mOtT-hw6K6obJcd9QaYW1uEG?usp=sharing).
+This includes:
+
+    - `replay_loop.csv` for `replay_loop_exploratory_figure_examples.py`
+    - `risk_scenarios_do_nothing.csv` and `risk_scenarios_PyLoopkit v0.1.csv for simulation_figures_demo_examples.py`
+    - The files in `insulin-pulses-sample-files-2020-07-02` for `insulin_pulses_animation.py` and `insulin_pulses_figures.py`
 
 ## Contributing Guide
 1. All are welcome to contribute to this project.
@@ -91,7 +95,6 @@ or `project_data_figure-2020-04-25-v-0-1-0.png`.
 NOTE: PHI data is never stored in github and the .gitignore file includes this requirement as well.
 
 ## Featured Notebooks/Analysis/Deliverables
-* [Colab Notebook/Figures/Website](link)
 
 ## Tidepool Data Science Team
 |Name (with github link)    |  [Tidepool Slack](https://tidepoolorg.slack.com/)   |

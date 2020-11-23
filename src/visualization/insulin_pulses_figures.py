@@ -667,7 +667,7 @@ if __name__ == "__main__":
         figure_name="summary-metrics-dkai-riskscore-scatterplot-v2",
         analysis_name="insulin-pulses",
         view_fig=True,
-        save_fig=False,
+        save_fig=True,
         save_fig_path=os.path.join(
             "..", "..", "reports", "figures", "insulin-pulses-risk-assessment"
         ),

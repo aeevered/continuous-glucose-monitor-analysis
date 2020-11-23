@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
 import os
-from src.visualization.save_view_fig import save_view_fig, save_animation
+from src.visualization.save_view_fig import save_view_fig
 from src.visualization.simulation_figures_shared_functions import (
     data_loading_and_preparation,
     get_features_dictionary,

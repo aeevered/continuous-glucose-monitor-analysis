@@ -12,8 +12,11 @@ from src.visualization.save_view_fig import save_view_fig
 import json
 from scipy import stats
 import tidepool_data_science_metrics as metrics
-from src.visualization.simulation_figure_plotly import create_simulation_figure_plotly
+from plotly.subplots import make_subplots
 
+
+# Todo: Update to use MARD and MBE functions from icgm-sensitivity-analysis or from data-science-metrics Reference:
+#  https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py
 # from tidepool_data_science_models.models.icgm_sensor_generator_functions import (
 #     calc_mard,
 #     preprocess_data,
@@ -21,12 +24,6 @@ from src.visualization.simulation_figure_plotly import create_simulation_figure_
 #     calc_icgm_sc_table,
 #     calc_icgm_special_controls_loss,
 # )
-
-utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
-
-
-# Todo: Update to use MARD and MBE functions from icgm-sensitivity-analysis or from data-science-metrics Reference:
-#  https://github.com/tidepool-org/icgm-sensitivity-analysis/blob/jameno/analysis-tables/src/simulator_functions.py
 
 
 def add_error_fields(df):
@@ -147,13 +144,13 @@ def get_data(
     ylw = simulation_characteristics_json_data["controller"]["config"]["ylw"]
     cir = simulation_characteristics_json_data["patient"]["config"][
         "carb_ratio_schedule"
-    ]["schedule"][0]["setting"]
+    ]["schedule"][0]["setting"].replace(" g", "")
     isf = simulation_characteristics_json_data["patient"]["config"][
         "insulin_sensitivity_schedule"
-    ]["schedule"][0]["setting"]
+    ]["schedule"][0]["setting"].replace(" m", "")
     sbr = simulation_characteristics_json_data["patient"]["config"]["basal_schedule"][
         "schedule"
-    ][0]["setting"]
+    ][0]["setting"].replace(" U", "")
 
     starting_bg = simulation_df["bg"].iloc[0]
     starting_bg_sensor = simulation_df["bg_sensor"].iloc[0]
@@ -297,17 +294,11 @@ def get_data(
 
 # Visualization Functions
 
-# TODO: use mypy and specify the types
-
-utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
-
-# TODO: automatically grab the code version to add to the figures generated
-code_version = "v0-1-0"
-
-
 # Meta data table code based on legacy make_figures_and_tables.py code
 
 # Generic methods for tables based on bins
+
+
 def bin_data(bin_breakpoints):
     """
 
@@ -332,8 +323,10 @@ def get_metadata_tables(demographic_df, fig_path):
 
     Parameters
     ----------
-    demographic_df
-    fig_path
+    demographic_df: dataframe
+        dataframe of
+    fig_path: str
+        path to save figures at
 
     Returns
     -------
@@ -341,19 +334,19 @@ def get_metadata_tables(demographic_df, fig_path):
     """
 
     # Prepare demographic data for tables
-
     print(demographic_df.columns)
-    virtual_patient_group = demographic_df[
-        ["virtual_patient_num", "age", "ylw", "CIR", "ISF", "SBR"]
-    ].groupby("virtual_patient_num")
-    print(virtual_patient_group.columns)
+    virtual_patient_group = demographic_df.groupby("virtual_patient_num")
+    print(virtual_patient_group)
     demographic_reduced_df = virtual_patient_group[
-        ["age", "ylw", "CIR", "ISF", "SBR"]
+        ["age", "ylw", "cir", "isf", "sbr"]
     ].median()
-    print(demographic_reduced_df.columns)
+
+    print(demographic_reduced_df)
 
     # get replace age and years living with (ylw) < 0 with np.nan
     demographic_reduced_df[demographic_reduced_df < 0] = np.nan
+
+    print(demographic_reduced_df)
 
     # %% Age Breakdown Table
     # TODO: this can be generalized for any time we want to get counts by bins
@@ -427,16 +420,18 @@ def get_metadata_tables(demographic_df, fig_path):
         save_fig=True,
         save_fig_path=fig_path,
     )
+
+    print(demographic_reduced_df)
     # %% Carb to Insulin Ratio Table
     cir_bin_breakpoints = np.array(
         [
-            demographic_reduced_df["CIR"].min(),
+            demographic_reduced_df["cir"].min(),
             5,
             10,
             15,
             20,
             25,
-            demographic_reduced_df["CIR"].max() + 1,
+            demographic_reduced_df["cir"].max() + 1,
         ]
     ).astype(int)
     cir_bins = bin_data(cir_bin_breakpoints)
@@ -447,11 +442,11 @@ def get_metadata_tables(demographic_df, fig_path):
 
     # cut the data by bin
     demographic_reduced_df["cir_bin"] = np.nan
-    demographic_reduced_df["cir_bin"] = pd.cut(demographic_reduced_df["CIR"], cir_bins)
-    cir_table["Count"] = demographic_reduced_df.groupby("cir_bin")["CIR"].count().values
+    demographic_reduced_df["cir_bin"] = pd.cut(demographic_reduced_df["cir"], cir_bins)
+    cir_table["Count"] = demographic_reduced_df.groupby("cir_bin")["cir"].count().values
 
     # add in missing data
-    cir_table.loc["Missing", "Count"] = demographic_reduced_df["CIR"].isnull().sum()
+    cir_table.loc["Missing", "Count"] = demographic_reduced_df["cir"].isnull().sum()
 
     # make sure that counts add up correctly
     # TODO: make a test that checks that the total subjects equal the total counts in the table
@@ -477,14 +472,14 @@ def get_metadata_tables(demographic_df, fig_path):
     # %% ISF Table
     isf_bin_breakpoints = np.array(
         [
-            np.min([demographic_reduced_df["ISF"].min(), 5]),
+            np.min([demographic_reduced_df["isf"].min(), 5]),
             10,
             25,
             50,
             75,
             100,
             200,
-            np.max([400, demographic_reduced_df["ISF"].max() + 1]),
+            np.max([400, demographic_reduced_df["isf"].max() + 1]),
         ]
     ).astype(int)
     isf_bins = bin_data(isf_bin_breakpoints)
@@ -495,11 +490,11 @@ def get_metadata_tables(demographic_df, fig_path):
 
     # cut the data by bin
     demographic_reduced_df["isf_bin"] = np.nan
-    demographic_reduced_df["isf_bin"] = pd.cut(demographic_reduced_df["ISF"], isf_bins)
-    isf_table["Count"] = demographic_reduced_df.groupby("isf_bin")["ISF"].count().values
+    demographic_reduced_df["isf_bin"] = pd.cut(demographic_reduced_df["isf"], isf_bins)
+    isf_table["Count"] = demographic_reduced_df.groupby("isf_bin")["isf"].count().values
 
     # add in missing data
-    isf_table.loc["Missing", "Count"] = demographic_reduced_df["ISF"].isnull().sum()
+    isf_table.loc["Missing", "Count"] = demographic_reduced_df["isf"].isnull().sum()
 
     # make sure that counts add up correctly
     # TODO: make a test that checks that the total subjects equal the total counts in the table
@@ -525,7 +520,7 @@ def get_metadata_tables(demographic_df, fig_path):
     # %% Basal Rate (BR) Table
     br_bin_breakpoints = np.append(
         np.arange(0, 1.5, 0.25),
-        np.arange(1.5, demographic_reduced_df["SBR"].max() + 0.5, 0.5),
+        np.arange(1.5, demographic_reduced_df["sbr"].max() + 0.5, 0.5),
     )
     br_bins = bin_data(br_bin_breakpoints)
 
@@ -535,11 +530,11 @@ def get_metadata_tables(demographic_df, fig_path):
 
     # cut the data by bin
     demographic_reduced_df["br_bin"] = np.nan
-    demographic_reduced_df["br_bin"] = pd.cut(demographic_reduced_df["SBR"], br_bins)
-    br_table["Count"] = demographic_reduced_df.groupby("br_bin")["SBR"].count().values
+    demographic_reduced_df["br_bin"] = pd.cut(demographic_reduced_df["sbr"], br_bins)
+    br_table["Count"] = demographic_reduced_df.groupby("br_bin")["sbr"].count().values
 
     # add in missing data
-    br_table.loc["Missing", "Count"] = demographic_reduced_df["SBR"].isnull().sum()
+    br_table.loc["Missing", "Count"] = demographic_reduced_df["sbr"].isnull().sum()
 
     # make sure that counts add up correctly
     # TODO: make a test that checks that the total subjects equal the total counts in the table
@@ -550,6 +545,7 @@ def get_metadata_tables(demographic_df, fig_path):
     br_table.loc["Total", "Count"] = total_virtual_subjects_from_table
 
     br_table.reset_index(inplace=True)
+
     make_table(
         br_table,
         table_name="br-table",
@@ -561,6 +557,8 @@ def get_metadata_tables(demographic_df, fig_path):
         save_fig=True,
         save_fig_path=fig_path,
     )
+
+    return
 
 
 def make_table(
@@ -580,25 +578,41 @@ def make_table(
 
     Parameters
     ----------
-    table_df
-    image_type
-    table_name
-    analysis_name
-    cell_height
-    cell_width
-    cell_header_height
-    view_fig
-    save_fig
-    save_csv
-    save_fig_path
+    table_df: dataframe
+        dataframe for making the table from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    table_name: str
+        name to use for the table when saving the figure
+    analysis_name: str
+        name of the analysis this table is associated with
+    cell_height: sized
+        height of the cells in the table
+    cell_width: sized
+        width of the cells in the table
+    cell_header_height: sized
+        height of the header cells in the table
+    view_fig: bool
+        whether or not to view the table (opens in browser)
+    save_fig: bool
+        whether or not to save the table
+    save_csv: bool
+        whether to save the table contents as a csv
+    save_fig_path: str
+        file path for where to save the figure
+
 
     Returns
     -------
 
     """
     # TODO: reduce the number of inputs to: df, style_dict, and save_dict
+
+    # Get size (rows, cols) of table
     table_cols = table_df.columns
     n_rows, n_cols = table_df.shape
+
+    # Make table shell
     _table = go.Table(
         columnwidth=cell_width,
         header=dict(
@@ -619,6 +633,7 @@ def make_table(
         ),
     )
 
+    # Set other elements of the table layout
     if len(cell_width) > 1:
         table_width = np.sum(np.asarray(cell_width))
     else:
@@ -627,10 +642,11 @@ def make_table(
     table_layout = go.Layout(
         margin=dict(l=10, r=10, t=10, b=0), width=table_width, height=table_height
     )
+
+    # Create the figure with the table and table layout
     fig = go.Figure(data=_table, layout=table_layout)
 
-    # print(table_height, table_width)
-
+    # Save and/or view the figure
     save_view_fig(
         fig,
         image_type=image_type,
@@ -643,6 +659,7 @@ def make_table(
         height=table_height,
     )
 
+    # Save the table contents as a csv if desired
     file_name = "{}-{}_{}_{}".format(
         analysis_name, table_name, utc_string, code_version
     )
@@ -653,9 +670,11 @@ def make_table(
     return
 
 
-########## Spearman Correlation Coefficient Table #################
+# Spearman Correlation Coefficient table
 # TODO: Spearman Correlation Coefficient Table should be QC-ed and
 #  possibly add some in line tests
+
+# TODO: this also needs to be updated to include the new set of sensor parameters
 def spearman_correlation_table(
     results_df,
     image_type="png",
@@ -671,24 +690,39 @@ def spearman_correlation_table(
 ):
     """
 
+    Function for create a spearment correlation coefficient table
+
     Parameters
     ----------
-    results_df
-    image_type
-    table_name
-    analysis_name
-    cell_header_height
-    cell_height
-    cell_width
-    view_fig
-    save_fig
-    save_csv
-    save_fig_path
+    results_df: dataframe
+        dataframe pulling from for data to calculate spearman correlation coefficients from
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    table_name: str
+        name to use for the table when saving the figure
+    analysis_name: str
+        name of the analysis this table is associated with
+    cell_header_height: sized
+        height of the header cells in the table
+    cell_height: sized
+        height of the cells in the table
+    cell_width: sized
+        width of the cells in the table
+    view_fig: bool
+        whether or not to view the table (opens in browser)
+    save_fig: bool
+        whether or not to save the table
+    save_csv: bool
+        whether to save the table contents as a csv
+    save_fig_path: str
+        file path for where to save the figure
 
     Returns
     -------
 
     """
+
+    # Specify the rows and the columns
     rows = [
         "bias_factor",
         "bias_drift_oscillations",
@@ -698,10 +732,12 @@ def spearman_correlation_table(
         "mard",
         "mbe",
     ]
+
     cols = ["LBGI", "LBGI Risk Score", "DKAI", "DKAI Risk Score"]
 
     data = {}
 
+    # Create dataframe for table
     for col in cols:
         row_data = []
         for row in rows:
@@ -724,6 +760,7 @@ def spearman_correlation_table(
         ],
     )
 
+    # Make and save table
     make_table(
         spearman_correlation_df,
         image_type=image_type,
@@ -755,26 +792,39 @@ def create_scatter(
 ):
     """
 
-    Function for checking the distribution of the risk scores by sensor characteristics.
+    Generic function for creating and saving a plotly express scatterplot.
 
     Parameters
     ----------
-    df
-    x_value
-    y_value
-    color_value
-    image_type
-    analysis_name
-    view_fig
-    save_fig
-    title
-    fig_name
-    save_fig_path
+    df: dataframe
+        dataframe want to create scatter plot from
+    x_value: str
+        column from that dataframe want to use for x value
+    y_value: str
+        column from that dataframe want to use for y value
+    color_value: str
+        column from that dataframe want to use for color value
+    image_type: str
+        file type ("png","jpg","pdf", etc.) to save image as
+    analysis_name: str
+        name of the analysis this scatterplot is associated with (ex. "icgm_sensitivity_analysis"
+    view_fig: bool
+        whether or not to view the figure
+    save_fig: bool
+        whether or not to savve the figure
+    title: str
+        title of the figure
+    fig_name: str
+        name of the figure
+    save_fig_path: str
+        path to save the figure at
 
     Returns
     -------
 
     """
+
+    # Use this if there is a color value passed in
     if color_value != "":
         df = df.sort_values(by=color_value, ascending=True)
         fig = px.scatter(
@@ -785,13 +835,15 @@ def create_scatter(
             color=color_value,
             title=title,
             color_continuous_scale=px.colors.sequential.Viridis,
-        )  # , color_continuous_scale=px.colors.diverging.RdYlGn)
+        )
         fig.update_traces(marker=dict(size=3))
+
+    # Otherwise just create the scatter plot without a color value
     else:
         fig = px.scatter(data_frame=df, x=x_value, y=y_value, opacity=0.3, title=title)
-
         fig.update_traces(marker=dict(size=3))
 
+    # Save and/or view the figure
     save_view_fig(
         fig,
         image_type,
@@ -801,38 +853,39 @@ def create_scatter(
         save_fig,
         save_fig_path,
     )
+
     return
 
 
-def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
+def run_pairwise_comparison(
+    results_df,
+    baseline_df,
+    results_folder_name,
+    baseline_folder_name,
+    save_fig_path,
+    aggregated_tables_filepath,
+):
     """
 
     Parameters
     ----------
-    results_df
-    baseline_df
-    save_fig_folder_name
+    results_df: dataframe
+        dataframe for where the results (icgm) data is stored
+    baseline_df: dataframe
+        dataframe for where the baseline (ideal sensor) data is stored
+    results_folder_name: str
+        name of the folder where the results are
+    save_fig_path: str
+        folder of where to save the figures
+    aggregated_tables_filepath: str
+        file path location of the aggregated tables
 
     Returns
     -------
 
     """
-    # Add ratio to each row
-    # Need to look up for each row into the baseline_df by virtual patient and by
-    fig_path = os.path.join(
-        "..",
-        "..",
-        "reports",
-        "figures",
-        "icgm-sensitivity-paired-comparison-figures",
-        save_fig_folder_name,
-    )
-
-    if not os.path.exists(fig_path):
-        print("making directory " + fig_path + "...")
-        os.makedirs(fig_path)
-
-    combined_df = results_df.merge(
+    # Create a combined dataframe of results, merging on patient number, analysis type, and bg test condition
+    combined_results_df = results_df.merge(
         baseline_df,
         how="left",
         left_on=["virtual_patient_num", "analysis_type", "bg_test_condition"],
@@ -840,105 +893,323 @@ def run_pairwise_comparison(results_df, baseline_df, save_fig_folder_name):
         suffixes=("_icgm", "_baseline"),
     )
 
-    combined_df["LBGI Ratio"] = combined_df["LBGI_icgm"] / combined_df["LBGI_baseline"]
-    combined_df["HBGI Ratio"] = combined_df["HBGI_icgm"] / combined_df["HBGI_baseline"]
-    combined_df["DKAI Ratio"] = combined_df["DKAI_icgm"] / combined_df["DKAI_baseline"]
-    combined_df["BGRI Ratio"] = combined_df["BGRI_icgm"] / combined_df["BGRI_baseline"]
-    combined_df["Percent <54 Ratio"] = (
-        combined_df["percent_lt_54_icgm"] / combined_df["percent_lt_54_baseline"]
+    # Add in metrics to compare the baseline results to the icgm results
+    combined_results_df["lbgi_ratio"] = (
+        combined_results_df["lbgi_icgm"] / combined_results_df["lbgi_baseline"]
+    )
+    combined_results_df["hbgi_ratio"] = (
+        combined_results_df["hbgi_icgm"] / combined_results_df["hbgi_baseline"]
+    )
+    combined_results_df["dkai_ratio"] = (
+        combined_results_df["dkai_icgm"] / combined_results_df["dkai_baseline"]
+    )
+    combined_results_df["bgri_ratio"] = (
+        combined_results_df["bgri_icgm"] / combined_results_df["bgri_baseline"]
     )
 
-    combined_df["LBGI Percent Change"] = (
-        (combined_df["LBGI_icgm"] - combined_df["LBGI_baseline"]) * 100
-    ) / combined_df["LBGI_baseline"]
-    combined_df["HBGI Percent Change"] = (
-        (combined_df["HBGI_icgm"] - combined_df["HBGI_baseline"]) * 100
-    ) / combined_df["HBGI_baseline"]
-    combined_df["DKAI Percent Change"] = (
-        (combined_df["DKAI_icgm"] - combined_df["DKAI_baseline"]) * 100
-    ) / combined_df["DKAI_baseline"]
-    combined_df["BGRI Percent Change"] = (
-        (combined_df["BGRI_icgm"] - combined_df["BGRI_baseline"]) * 100
-    ) / combined_df["BGRI_baseline"]
-    combined_df["Percent <54 Percent Change"] = (
-        (combined_df["percent_lt_54_icgm"] - combined_df["percent_lt_54_baseline"])
-        * 100
-    ) / combined_df["percent_lt_54_baseline"]
-
-    combined_df["LBGI Difference"] = (
-        combined_df["LBGI_icgm"] - combined_df["LBGI_baseline"]
-    )
-    combined_df["HBGI Difference"] = (
-        combined_df["HBGI_icgm"] - combined_df["HBGI_baseline"]
-    )
-    combined_df["DKAI Difference"] = (
-        combined_df["DKAI_icgm"] - combined_df["DKAI_baseline"]
-    )
-    combined_df["BGRI Difference"] = (
-        combined_df["BGRI_icgm"] - combined_df["BGRI_baseline"]
-    )
-    combined_df["Percent <54 Difference"] = (
-        combined_df["percent_lt_54_icgm"] - combined_df["percent_lt_54_baseline"]
+    combined_results_df["percent_lt_54_ratio"] = (
+        combined_results_df["percent_lt_54_icgm"]
+        / combined_results_df["percent_lt_54_baseline"]
     )
 
-    combined_df.to_csv(
-        path_or_buf=os.path.join(
-            fig_path, "pairwise_comparison_combined_df_" + save_fig_folder_name + ".csv"
-        ),
+    combined_results_df["lbgi_difference"] = (
+        combined_results_df["lbgi_icgm"] - combined_results_df["lbgi_baseline"]
+    )
+
+    combined_results_df["hbgi_difference"] = (
+        combined_results_df["hbgi_icgm"] - combined_results_df["hbgi_baseline"]
+    )
+
+    combined_results_df["dkai_difference"] = (
+        combined_results_df["dkai_icgm"] - combined_results_df["dkai_baseline"]
+    )
+
+    combined_results_df["bgri_difference"] = (
+        combined_results_df["bgri_icgm"] - combined_results_df["bgri_baseline"]
+    )
+
+    combined_results_df["percent_lt_54_difference"] = (
+        combined_results_df["percent_lt_54_icgm"]
+        - combined_results_df["percent_lt_54_baseline"]
+    )
+
+    # Create file name for combined dataframe
+    combined_df_file_name = "{}-{}_{}_{}_{}_{}{}".format(
+        "pairwise_comparison",
+        "combined_df",
+        results_folder_name,
+        baseline_folder_name,
+        utc_string,
+        code_version,
+        ".csv",
+    )
+
+    # Read and save this dataframe to a csv
+    combined_results_df.to_csv(
+        path_or_buf=os.path.join(aggregated_tables_filepath, combined_df_file_name),
         index=False,
     )
 
-    run_pairwise_comparison_figures(save_fig_folder_name)
+    # Use that combined dataframe to create pairwise comparison figures
+    run_pairwise_comparison_figures(combined_results_df, save_fig_path)
 
     return
 
 
-def run_pairwise_comparison_figures(save_fig_folder_name):
+def run_pairwise_comparison_figures(combined_results_df, save_fig_path):
     """
+
+    Create a set of figures for viewing and analyzing the results of the pairwise comparison.
+
+    Additional figures can be added to this function as needed for further
+    exploratory analysis and final analysis report.
 
     Parameters
     ----------
-    save_fig_folder_name
+    combined_results_df: dataframe
+        dataframe of the merged baseline and icgm results that want to use for creating figures
+
+    save_fig_path: str
+        path to save figures to
 
     Returns
     -------
 
     """
-    fig_path = os.path.join(
-        "..",
-        "..",
-        "reports",
-        "figures",
-        "icgm-sensitivity-paired-comparison-figures",
-        save_fig_folder_name,
-    )
-    combined_df = pd.read_csv(
-        os.path.join(
-            "..",
-            "..",
-            "reports",
-            "figures",
-            "icgm-sensitivity-paired-comparison-figures",
-            save_fig_folder_name,
-            "pairwise_comparison_combined_df_" + save_fig_folder_name + ".csv",
-        )
-    )
 
     # Make Paired Comparison Scatter Plot
     create_paired_comparison_scatter_plots(
-        combined_df,
-        fig_path=os.path.join(fig_path, "distributions-sensor-characteristic-outcome"),
+        combined_results_df,
+        fig_path=os.path.join(
+            save_fig_path, "distributions-sensor-characteristic-outcome"
+        ),
     )
 
-    # Generate crosstab of risk scores
+    # Generate cross tab of risk scores
     create_table_paired_risk_score_bins(
-        combined_df, fig_path=os.path.join(fig_path, "risk-score-crosstabs")
+        combined_results_df,
+        fig_path=os.path.join(save_fig_path, "risk-score-crosstabs"),
     )
 
+    # Generate sensor characteristic scatter plots (distribution of one sensor characteristic by another)
     create_sensor_characteristic_scatters(
-        combined_df,
-        fig_path=os.path.join(fig_path, "sensor_characteristic_distributions"),
+        combined_results_df,
+        fig_path=os.path.join(save_fig_path, "sensor_characteristic_distributions"),
     )
+
+    # Create scatter plots by analysis level
+    create_paired_comparison_by_analysis_level_scatter_plots(
+        combined_results_df,
+        fig_path=os.path.join(save_fig_path, "scatter_plots_by_analysis_level"),
+        analysis_level="analysis_type_label",
+    )
+
+    create_paired_comparison_by_analysis_level_scatter_plots(
+        combined_results_df,
+        fig_path=os.path.join(save_fig_path, "scatter_plots_by_analysis_level"),
+        analysis_level="bg_test_condition_label",
+    )
+
+    # Add additional figures as needed
+
+    return
+
+
+def create_frequency_df_for_risk_score_crosstabs(df, metric):
+    """
+
+    Helper function to create_table_paired_risk_score_bins figures. Takes in a dataframe
+    and gets the count and percentage of scenarios that started in each particular risk
+    score bin (for a given metric) and switch to a different particular bin. Returns that
+    frequencies/counts dataframe.
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to create a frequency/percentage dataframe from
+    metric: str
+        column of dataframe want breakdown of (frequencies/percentage)
+
+    Returns
+    -------
+    frenquency_df, a dataframe with frequencies and counts of scenarios that started in
+    each particular risk score bin (for a given metric) and switch to a different particular bin
+
+    """
+
+    # Create a starting crosstab
+    frequency_df = pd.crosstab(
+        df[metric + "_risk_score_string_baseline"],
+        df[metric + "_risk_score_string_icgm"],
+    )
+
+    # TODO: update this; probably a better way to do this
+
+    # Get percentages (row-wise)
+    percentage_df = frequency_df.loc[
+        :, frequency_df.columns != metric + "_risk_score_string_baseline"
+    ].apply(lambda x: x / x.sum(), axis=1)
+
+    # Format frequency_df to have both count and percentage
+    for row in range(len(frequency_df)):
+        for col in range(len(frequency_df.columns)):
+            frequency_df.iloc[row, col] = (
+                str("{:,}".format(frequency_df.iloc[row, col]))
+                + " ("
+                + str("{:.1%}".format(percentage_df.iloc[row, col]))
+                + ")"
+            )
+
+    # TODO: add in rows/columns with 0, 0% for cases where there are no scenarios in that particular bucket
+
+    # Reset index
+    frequency_df = frequency_df.reset_index()
+
+    return frequency_df
+
+
+def create_paired_comparison_by_analysis_level_scatter_plots(
+    df, fig_path, analysis_level="analysis_type_label"
+):
+    """
+
+    Create a set of scatter plots showing the distribution of comparison risk metrics by sensor
+    characteristic and how this changes across the categories in an analysis level (bg test condition, analysis type)
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe of combined results
+    fig_path: str
+        file path for saving figures
+    analysis_level: str
+        analysis level want to see the scatter plot comparison for
+
+    Returns
+    -------
+
+    """
+
+    # Create the directory if it does not exist
+    if not os.path.exists(fig_path):
+        print("making directory " + fig_path + "...")
+        os.makedirs(fig_path)
+
+    sensor_characteristics = ["initial_bias"]
+
+    outcome_metrics = ["lbgi", "hbgi", "dkai"]
+
+    comparison_types = ["difference"]
+
+    df = df.sort_values(by=["bg_test_condition_label_icgm"])
+
+    analysis_level_unique_values = df[analysis_level + "_icgm"].unique()
+
+    # Create a plot for each of the sensor characteristics specified
+    for comparison_type in comparison_types:
+        for sensor_characteristic in sensor_characteristics:
+            n_cols = len(outcome_metrics)
+            n_rows = len(analysis_level_unique_values)
+            subplot_titles = []
+
+            # Iterate through analysis level values and outcome metrics to get subplot titles
+            for analysis_level_value in analysis_level_unique_values:
+                for metric in outcome_metrics:
+                    if analysis_level == "bg_test_condition":
+                        subplot_titles.append(
+                            "BG Test Condition "
+                            + str(analysis_level_value)
+                            + ", "
+                            + metric
+                            + "_"
+                            + comparison_type
+                        )
+                    else:
+                        subplot_titles.append(
+                            str(analysis_level_value) + ", " + metric + comparison_type
+                        )
+
+            # Make subplots
+            fig = make_subplots(
+                rows=n_rows,
+                cols=n_cols,
+                subplot_titles=subplot_titles,
+                horizontal_spacing=0.1,
+            )
+
+            # Iterate through analysis level values and outcome metrics to add plots
+            for i, analysis_level_value in enumerate(analysis_level_unique_values):
+                for j, metric in enumerate(outcome_metrics):
+                    metric_field = metric + "_" + comparison_type
+
+                    reduced_df = df[
+                        df[analysis_level + "_icgm"] == analysis_level_value
+                    ]
+                    print(reduced_df[[sensor_characteristic + "_icgm", metric_field]])
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=reduced_df[sensor_characteristic + "_icgm"],
+                            y=reduced_df[metric_field],
+                            customdata=reduced_df["filename_icgm"],
+                            mode="markers",
+                            marker=dict(size=4, opacity=0.6),
+                            showlegend=False,
+                        ),
+                        row=i + 1,
+                        col=j + 1,
+                    )
+
+            x_max_value = np.nanmax(df[sensor_characteristic + "_icgm"])
+            x_min_value = np.nanmin(df[sensor_characteristic + "_icgm"])
+
+            y_max_value = max(np.nanmax(df[metric + "_" + comparison_type]) for metric in outcome_metrics)
+            y_min_value = min(np.nanmin(df[metric + "_" + comparison_type]) for metric in outcome_metrics)
+
+            analysis_level_dict = {
+                "bg_test_condition_label": "BG Test Condition",
+                "analysis_type_label": "Analysis Type",
+            }
+
+            # Update figure layout and axes
+            fig.update_layout(
+                title="Outcome Metric "
+                + comparison_type
+                + ": Baseline vs. iCGM Sensors<br>By "
+                + analysis_level_dict[analysis_level],
+                legend_title="Risk Scores",
+                showlegend=True,
+                font_size=6,
+            )
+
+            # Standardize x and y axes
+            fig.update_yaxes(range=[y_min_value, y_max_value])
+
+            fig.update_xaxes(
+                title=sensor_characteristics_dict[sensor_characteristic],
+                range=[x_min_value, x_max_value],
+            )
+
+            for i in fig["layout"]["annotations"]:
+                i["font"] = dict(size=7)
+
+            # Save and/or view figure
+            save_view_fig(
+                fig,
+                image_type="png",
+                figure_name="distribution_"
+                + comparison_type
+                + "_"
+                + analysis_level
+                + "_sensor_characteristic"
+                + "_pairwise_comparison_scatter",
+                analysis_name="icgm-sensitivity-analysis",
+                view_fig=False,
+                save_fig=True,
+                save_fig_path=fig_path,
+                width=200 * n_cols,
+                height=200 * n_rows,
+            )
 
     return
 
@@ -946,48 +1217,45 @@ def run_pairwise_comparison_figures(save_fig_folder_name):
 def create_table_paired_risk_score_bins(df, fig_path):
     """
 
+    Creates a set of crosstab tables showing the count and percentage of scenarios
+    that started in each particular risk score bin (for a given metric) and switched
+    to a different particular bin. Saves those tables
+
     Parameters
     ----------
-    df
-    fig_path
+    df: dataframe
+        dataframe using to create the risk score bin tables
+    fig_path: str
+        file path to save the tables to
+
 
     Returns
     -------
 
     """
+
+    # Make the save figure directory if it does not yet exist
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
 
-    for metric in ["DKAI", "LBGI"]:
-        frequency_df = pd.crosstab(
-            df[metric + " Risk Score String_baseline"],
-            df[metric + " Risk Score String_icgm"],
-        )  # .reset_index()
+    # Iterate through the different metrics want tables for
+    # This list of metrics should be added to, as needed
+    for metric in ["dkai", "lbgi"]:
 
-        # TODO: update this; not pythonic way to do
-        percentage_df = frequency_df.loc[
-            :, frequency_df.columns != metric + " Risk Score String_baseline"
-        ].apply(lambda x: x / x.sum(), axis=1)
-        for row in range(len(frequency_df)):
-            for col in range(len(frequency_df.columns)):
-                frequency_df.iloc[row, col] = (
-                    str("{:,}".format(frequency_df.iloc[row, col]))
-                    + " ("
-                    + str("{:.1%}".format(percentage_df.iloc[row, col]))
-                    + ")"
-                )
+        # Create the count/percentage dataframe from helper function
+        frequency_df = create_frequency_df_for_risk_score_crosstabs(df, metric)
 
-        frequency_df = frequency_df.reset_index()
-
+        # Rename columns to make clearer
         frequency_df = frequency_df.rename(
             columns={
                 metric
-                + " Risk Score String_baseline": metric
+                + "_risk_score_string_baseline": metric
                 + " Risk Score<br>Rows: Baseline; Columns: iCGM"
             }
         )
 
+        # Make and save the table
         make_table(
             frequency_df,
             table_name=metric + "_paired_risk_score_cross_tab",
@@ -1001,28 +1269,17 @@ def create_table_paired_risk_score_bins(df, fig_path):
             save_fig_path=fig_path,
         )
 
+        # Create these tables for each of the bg test conditions
         for bg_test_condition in df["bg_test_condition"].unique():
+            # Create a reduced dataframe for a particular test condition
             reduced_df = df[df["bg_test_condition"] == bg_test_condition]
-            frequency_df = pd.crosstab(
-                reduced_df[metric + " Risk Score String_baseline"],
-                reduced_df[metric + " Risk Score String_icgm"],
-            )  # .reset_index()
 
-            # TODO: update this; not pythonic way to do
-            percentage_df = frequency_df.loc[
-                :, frequency_df.columns != metric + " Risk Score String_baseline"
-            ].apply(lambda x: x / x.sum(), axis=1)
-            for row in range(len(frequency_df)):
-                for col in range(len(frequency_df.columns)):
-                    frequency_df.iloc[row, col] = (
-                        str("{:,}".format(frequency_df.iloc[row, col]))
-                        + " ("
-                        + str("{:.1%}".format(percentage_df.iloc[row, col]))
-                        + ")"
-                    )
+            # Create the count/percentage dataframe from helper function
+            frequency_df = create_frequency_df_for_risk_score_crosstabs(
+                reduced_df, metric
+            )
 
-            frequency_df = frequency_df.reset_index()
-
+            # Rename columns to make clearer
             frequency_df = frequency_df.rename(
                 columns={
                     metric
@@ -1033,6 +1290,7 @@ def create_table_paired_risk_score_bins(df, fig_path):
                 }
             )
 
+            # Make and save the table
             make_table(
                 frequency_df,
                 table_name=metric
@@ -1048,27 +1306,15 @@ def create_table_paired_risk_score_bins(df, fig_path):
                 save_fig_path=fig_path,
             )
 
+        # Create these tables for each of the analysis types
         for analysis_type in df["analysis_type_label_icgm"].unique():
+            # Create a reduced dataframe for a particular analysis type
             reduced_df = df[df["analysis_type_label_icgm"] == analysis_type]
-            frequency_df = pd.crosstab(
-                reduced_df[metric + " Risk Score String_baseline"],
-                reduced_df[metric + " Risk Score String_icgm"],
-            )  # .reset_index()
 
-            # TODO: update this; not pythonic way to do
-            percentage_df = frequency_df.loc[
-                :, frequency_df.columns != metric + " Risk Score String_baseline"
-            ].apply(lambda x: x / x.sum(), axis=1)
-            for row in range(len(frequency_df)):
-                for col in range(len(frequency_df.columns)):
-                    frequency_df.iloc[row, col] = (
-                        str("{:,}".format(frequency_df.iloc[row, col]))
-                        + " ("
-                        + str("{:.1%}".format(percentage_df.iloc[row, col]))
-                        + ")"
-                    )
-
-            frequency_df = frequency_df.reset_index()
+            # Create the count/percentage dataframe from helper function
+            frequency_df = create_frequency_df_for_risk_score_crosstabs(
+                reduced_df, metric
+            )
 
             frequency_df = frequency_df.rename(
                 columns={
@@ -1080,6 +1326,7 @@ def create_table_paired_risk_score_bins(df, fig_path):
                 }
             )
 
+            # Make and save the table
             make_table(
                 frequency_df,
                 table_name=metric
@@ -1090,7 +1337,7 @@ def create_table_paired_risk_score_bins(df, fig_path):
                 cell_height=[30],
                 cell_width=[250, 125, 125, 125, 125, 125, 125],
                 image_type="png",
-                view_fig=True,
+                view_fig=False,
                 save_fig=True,
                 save_fig_path=fig_path,
             )
@@ -1101,19 +1348,27 @@ def create_table_paired_risk_score_bins(df, fig_path):
 def create_sensor_characteristic_scatters(df, fig_path):
     """
 
+    Create a set of scatterplots to see the bivariate distribution of the
+    sensor characteristics (i.e. how noise varies by across the sensor biases from the fitting)
+
     Parameters
     ----------
-    df
-    fig_path
+    df: dataframe
+        dataframe that contains the sensor characteristics (i.e. combined results dataframe)
+    fig_path: str
+        file path to save the figures to
 
     Returns
     -------
 
     """
+
+    # Create the file path if it does not yet exist
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
 
+    # List of sensor characteristics to see distribution of
     sensor_characteristics = [
         "noise_per_sensor",
         "initial_bias",
@@ -1124,17 +1379,7 @@ def create_sensor_characteristic_scatters(df, fig_path):
         "noise_max",
     ]
 
-    sensor_characteristics_dict = {
-        "noise_per_sensor": "Noise Per Sensor",
-        "initial_bias": "Initial Bias",
-        "bias_factor": "Bias Factor",
-        "phi_drift": "Phi Drift",
-        "drift_multiplier_start": "Drift Multiplier Start",
-        "drift_multiplier_end": "Drift Multiplier End",
-        "noise_max": "Noise Max",
-    }
-
-    # Create a plot for each of the sensor characteristics specified
+    # Create a plot for each combination of the sensor characteristics specified
     for i, sensor_characteristic_y in enumerate(sensor_characteristics):
         for j, sensor_characteristic_x in enumerate(sensor_characteristics):
             fig = px.scatter(
@@ -1142,8 +1387,10 @@ def create_sensor_characteristic_scatters(df, fig_path):
                 x=sensor_characteristic_x + "_icgm",
                 y=sensor_characteristic_y + "_icgm",
             )
-            fig.show()
 
+            fig.update_traces(marker=dict(size=2))
+
+            # Save figure
             save_view_fig(
                 fig,
                 image_type="png",
@@ -1160,14 +1407,33 @@ def create_sensor_characteristic_scatters(df, fig_path):
     return
 
 
-def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""):
+def create_paired_comparison_scatter_plots(df, fig_path, color_value=""):
+    """
+
+    Parameters
+    ----------
+    df: dataframe
+        dataframe to make scatterplots from
+    fig_path: str
+        file path to save figures at
+    color_value: str
+        what field to use for color for plots (i.e. for a third dimension)
+
+    Returns
+    -------
+
+    """
+
+    # Create directory if it doesn't exist
     if not os.path.exists(fig_path):
         print("making directory " + fig_path + "...")
         os.makedirs(fig_path)
 
-    comparison_types = [" Ratio", " Percent Change", " Difference"]
+    # Specify which comparison types, outcome metrics, and sensor characteristics to create plots for
+    # A plot will be made for each comparison type, outcome metric, sensor characteristic combination
+    comparison_types = ["ratio", "difference"]
 
-    outcome_metrics = ["LBGI", "DKAI", "HBGI"]
+    outcome_metrics = ["lbgi", "dkai", "hbgi"]
 
     sensor_characteristics = [
         "mard_icgm",
@@ -1191,19 +1457,17 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
         "noise_max_icgm",
     ]
 
+    # Create plot for each combination of comparison type, outcome metric, sensor characteristic
     for comparison_type, outcome_metric, sensor_characteristic in itertools.product(
         comparison_types, outcome_metrics, sensor_characteristics
     ):
+        y_value = outcome_metric + "_" + comparison_type
         create_scatter(
-            df=combined_df,
+            df=df,
             x_value=sensor_characteristic,
-            y_value=outcome_metric + comparison_type,
+            y_value=y_value,
             color_value=color_value,
-            title="Distribution of "
-            + outcome_metric
-            + comparison_type
-            + "<br>By "
-            + sensor_characteristic,
+            title="Distribution of " + y_value + "<br>By " + sensor_characteristic,
             fig_name="distribution_"
             + outcome_metric
             + "_"
@@ -1216,61 +1480,23 @@ def create_paired_comparison_scatter_plots(combined_df, fig_path, color_value=""
     return
 
 
-def create_sensor_characteristics_table(df, fig_path):
-    """
-
-    Parameters
-    ----------
-    df
-    fig_path
-
-    Returns
-    -------
-
-    """
-    columns = [
-        "sensor_num_icgm",
-        "initial_bias_icgm",
-        "bias_factor_icgm",
-        "bias_drift_oscillations_icgm",
-        "bias_drift_range_start_icgm",
-        "bias_drift_range_end_icgm",
-        "noise_coefficient_icgm",
-    ]
-    sensor_characteristics_df = df[columns].drop_duplicates()
-
-    sensor_characteristics_df = sensor_characteristics_df.sort_values(
-        by=["sensor_num_icgm"]
-    )
-
-    sensor_characteristics_df = sensor_characteristics_df.rename(
-        columns={
-            "sensor_num_icgm": "iCGM Sensor Number",
-            "initial_bias_icgm": "Initial Bias",
-            "bias_factor_icgm": "Bias Factor",
-            "bias_drift_oscillations_icgm": "Bias Factor Oscillations",
-            "bias_drift_range_start_icgm": "Bias Drift Range Start",
-            "bias_drift_range_end_icgm": "Bias Drift Range End",
-            "noise_coefficient_icgm": "Noise Coefficient",
-        }
-    )
-
-    print(sensor_characteristics_df)
-
-    return
-
-
 def settings_outside_clinical_bounds(cir, isf, sbr):
     """
+
+    Identifies whether any of the settings are outside clinical bounds (based on medical advisory)
 
     Parameters
     ----------
     cir: float
+        carb to insulin ratio for the particular scenario
     isf: float
+        insulin sensitivity factor for the particular scenario
     sbr:float
+        scheduled basal rate for the particular scenario
 
     Returns
     -------
+    a boolean for whether any of the settings fall outside of the clinical bounds criteria as defined in the function
 
     """
     return (
@@ -1288,71 +1514,28 @@ def create_data_frame_for_figures(
 ):
     """
 
+    Create an aggregate dataframe of the simulation results (for either baseline or iCGM) for
+    use in creating figures and analyzig the results. Save those aggregated dataframes as csvs.
+
     Parameters
     ----------
-    results_path
-    save_path
-    results_folder_name
-    is_baseline
+    results_path: str
+        path to where the results want to create dataframe for are
+    save_path: str
+        file path of outer folder for where to save the csvs of the aggregated dataframes to
+    results_folder_name: str
+        name of the folder that the results are located in (to be used in title of csvs saved)
+    is_baseline: bool
+        whether or not this results set is for the baseline (vs. icgm)
+        slightly different loading of data for baseline
 
     Returns
     -------
+    dataframe of aggregated results
 
     """
-    removed_scenarios = []
-    data = []
 
-    for i, filename in enumerate(sorted(os.listdir(results_path))):  # [0:100])):
-        if filename.endswith(".tsv"):
-
-            print(i, filename)
-            simulation_df = pd.read_csv(os.path.join(results_path, filename), sep="\t")
-
-            # Check that the first two bg values are equal
-            assert (
-                simulation_df.loc[0]["bg"] == simulation_df.loc[1]["bg"]
-            ), "First two BG values of simulation are not equal"
-
-            f = open(os.path.join(results_path, filename.replace(".tsv", ".json")), "r")
-            simulation_characteristics_json_data = json.loads(f.read())
-
-            vp_id = filename.split(".")[0].replace("vp", "")
-
-            cir = simulation_characteristics_json_data["patient"]["config"][
-                "carb_ratio_schedule"
-            ]["schedule"][0]["setting"].replace(" g", "")
-            isf = simulation_characteristics_json_data["patient"]["config"][
-                "insulin_sensitivity_schedule"
-            ]["schedule"][0]["setting"].replace(" m", "")
-            sbr = simulation_characteristics_json_data["patient"]["config"][
-                "basal_schedule"
-            ]["schedule"][0]["setting"].replace(" U", "")
-
-            # Add in the data
-            # if vp_id not in vp_outside_clinical_bounds:
-            if settings_outside_clinical_bounds(cir, isf, sbr):
-                print(filename + " has settings outside clinical bounds.")
-                removed_scenarios.append([filename, cir, isf, sbr])
-
-            else:
-                data.append(
-                    get_data(
-                        filename,
-                        simulation_df,
-                        simulation_characteristics_json_data,
-                        baseline=is_baseline,
-                    )
-                )
-
-        removed_scenarios_df = pd.DataFrame(
-            removed_scenarios, columns=["filename", "cir", "isf", "sbr"]
-        )
-        removed_scenarios_df.to_csv(
-            path_or_buf=os.path.join(
-                save_path, results_folder_name + "_removed_scenarios_df.csv"
-            ),
-            index=False,
-        )
+    # Columns will be loading in data for
 
     columns = [
         "filename",
@@ -1362,9 +1545,9 @@ def create_data_frame_for_figures(
         "patient_scenario_filename",
         "age",
         "ylw",
-        "CIR",
-        "ISF",
-        "SBR",
+        "cir",
+        "isf",
+        "sbr",
         "starting_bg",
         "starting_bg_sensor",
         "true_bolus",
@@ -1389,21 +1572,107 @@ def create_data_frame_for_figures(
         "mbe",
         "bg_test_condition",
         "analysis_type",
-        "LBGI",
-        "LBGI Risk Score",
-        "DKAI",
-        "DKAI Risk Score",
-        "HBGI",
-        "BGRI",
+        "lbgi",
+        "lbgi_risk_score",
+        "dkai",
+        "dkai_risk_score",
+        "hbgi",
+        "bgri",
         "percent_lt_54",
     ]
 
+    # Blank list to keep track of scenarios removed because settings are outside of clinical bounds.
+    removed_scenarios = []
+
+    # Blank list for adding data to
+    data = []
+
+    # Iterate through each of the files
+    for i, filename in enumerate(
+        sorted(os.listdir(results_path))
+    ):  # [0:100])): #(for testing)
+        # Identify file is simulation file
+        if filename.endswith(".tsv"):
+
+            print(i, filename)
+
+            # Read in that simulation data to a dataframe
+            simulation_df = pd.read_csv(os.path.join(results_path, filename), sep="\t")
+
+            # Check that the first two bg values are equal
+            assert (
+                simulation_df.loc[0]["bg"] == simulation_df.loc[1]["bg"]
+            ), "First two BG values of simulation are not equal"
+
+            # Find and read in the corresponding json data
+            f = open(os.path.join(results_path, filename.replace(".tsv", ".json")), "r")
+            simulation_characteristics_json_data = json.loads(f.read())
+
+            # Get the scenario settings characteristics so can check whether outside clinical bounds
+            cir = simulation_characteristics_json_data["patient"]["config"][
+                "carb_ratio_schedule"
+            ]["schedule"][0]["setting"].replace(" g", "")
+
+            isf = simulation_characteristics_json_data["patient"]["config"][
+                "insulin_sensitivity_schedule"
+            ]["schedule"][0]["setting"].replace(" m", "")
+
+            sbr = simulation_characteristics_json_data["patient"]["config"][
+                "basal_schedule"
+            ]["schedule"][0]["setting"].replace(" U", "")
+
+            # If any of the settings are outside clinical bounds, add to removed scnearios list and do not load
+            # into aggregated dataframe
+            if settings_outside_clinical_bounds(cir, isf, sbr):
+                print(filename + " has settings outside clinical bounds.")
+                removed_scenarios.append([filename, cir, isf, sbr])
+
+            # Otherwise add that data to data list
+            else:
+
+                # Get a row of data for that particular simulation and scenario characteristics
+                data_row = get_data(
+                    filename,
+                    simulation_df,
+                    simulation_characteristics_json_data,
+                    baseline=is_baseline,
+                )
+
+                # Confirm that the length of the returned data matches the number of columns for
+                # ultimate aggregate datafrrame
+                assert len(data_row) == len(
+                    columns
+                ), "length of returned data does not match number of columns"
+
+                data.append(data_row)
+
+        # Create and save dataframe of removed scenarios
+        removed_scenarios_df = pd.DataFrame(
+            removed_scenarios, columns=["filename", "cir", "isf", "sbr"]
+        )
+        removed_scenarios_filename = "{}_{}_{}_{}".format(
+            "removed_scenarios_df", results_folder_name, utc_string, code_version
+        )
+
+        removed_scenarios_df.to_csv(
+            path_or_buf=os.path.join(save_path, removed_scenarios_filename + ".csv"),
+            index=False,
+        )
+
+    # Create the results dataframe
     results_df = pd.DataFrame(data, columns=columns)
 
+    # Clean up the results dataframe
     results_df = clean_up_results_df(results_df)
 
+    # Save the results dataframe to a csv
+
+    results_df_filename = "{}_{}_{}_{}".format(
+        "results_df", results_folder_name, utc_string, code_version
+    )
+
     results_df.to_csv(
-        path_or_buf=os.path.join(save_path, results_folder_name + "_results_df.csv"),
+        path_or_buf=os.path.join(save_path, results_df_filename + ".csv"),
         index=False,
     )
 
@@ -1415,35 +1684,36 @@ def clean_up_results_df(results_df):
 
     Parameters
     ----------
-    results_df
+    results_df: dataframe
+        dataframe to clean up
 
     Returns
     -------
 
     """
+    # Make age and ylw columns numeric
     results_df[["age", "ylw"]] = results_df[["age", "ylw"]].apply(pd.to_numeric)
 
-    # rename the analysis types
-    results_df.replace({"tempBasal": "Temp Basal Analysis"}, inplace=True)
-    results_df.replace({"correctionBolus": "Correction Bolus Analysis"}, inplace=True)
+    # TODO: these additional columns should maybe just be replaced by doing cleanup within the figure code itself
 
+    # Add additional columns for help with cleaning up figures
     results_df["analysis_type_label"] = results_df["analysis_type"].replace(
         analysis_type_labels
     )
     results_df["bg_test_condition_label"] = results_df["bg_test_condition"].replace(
         analysis_type_labels
     )
-    results_df["DKAI Risk Score String"] = results_df["DKAI Risk Score"].replace(
+    results_df["dkai_risk_score_string"] = results_df["dkai_risk_score"].replace(
         score_dict
     )
-    results_df["LBGI Risk Score String"] = results_df["LBGI Risk Score"].replace(
+    results_df["lbgi_risk_score_string"] = results_df["lbgi_risk_score"].replace(
         score_dict
     )
 
     return results_df
 
 
-########## DICTIONARIES ###################
+# Dictionaries for use in visualization functions
 score_dict = {
     0: "0 - None",
     1: "1 - Negligible",
@@ -1471,9 +1741,22 @@ level_of_analysis_dict = {
     "bg_test_condition": "BG Test Condition",
 }
 
-#### LOAD IN DATA #####
+# TODO: use the sensor characteristics dictionary to clean up titles and axis names for final report figures
+sensor_characteristics_dict = {
+    "noise_per_sensor": "Noise Per Sensor",
+    "initial_bias": "Initial Bias",
+    "bias_factor": "Bias Factor",
+    "phi_drift": "Phi Drift",
+    "drift_multiplier_start": "Drift Multiplier Start",
+    "drift_multiplier_end": "Drift Multiplier End",
+    "noise_max": "Noise Max",
+}
 
 if __name__ == "__main__":
+
+    # TODO: automatically grab the code version to add to the figures generated
+    code_version = "v0-1-0"
+    utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 
     # Specify this parameter based on whether want to load the data and run the figures
     # or just run the figures
@@ -1483,62 +1766,100 @@ if __name__ == "__main__":
     icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
     results_files_path = os.path.join("..", "..", "data", "raw", icgm_folder_name)
 
-    # Specify the Baseline data fildepath
+    # Specify the Baseline data filepath
     ideal_sensor_folder_name = "icgm-sensitivity-analysis-results-2020-11-05-nogit"
     baseline_files_path = os.path.join(
         "..", "..", "data", "raw", ideal_sensor_folder_name
     )
 
-    # Set where to save figures
-    save_fig_folder_name = icgm_folder_name
+    # Save folder path
+    save_folder_name = "{}_{}".format(
+        icgm_folder_name, ideal_sensor_folder_name
+    )
 
+
+
+    # Specify where to save the figures to
     results_save_fig_path = os.path.join(
         "..",
         "..",
         "reports",
         "figures",
         "icgm-sensitivity-paired-comparison-figures",
-        save_fig_folder_name,
+        save_folder_name,
     )
 
+    # Create the directory if it does not exist
     if not os.path.exists(results_save_fig_path):
         print("making directory " + results_save_fig_path + "...")
         os.makedirs(results_save_fig_path)
 
-    # Load in the data (uncomment this section if data not previously loaded for desired files)
+    # Specify where to save the metadata tables to
+    metadata_save_path = os.path.join(results_save_fig_path, "metadata_tables")
+
+    # Create the directory if it does not exist
+    if not os.path.exists(metadata_save_path):
+        print("making directory " + metadata_save_path + "...")
+        os.makedirs(metadata_save_path)
+
+    # Specify where to save the process data csv files to
+    processed_data_filepath = os.path.join(
+        "..",
+        "..",
+        "data",
+        "processed",
+        "icgm-sensitivity-analysis-aggregate-tables-nogit",
+        save_folder_name,
+    )
+
+    # Create the directory if it does not exist
+    if not os.path.exists(processed_data_filepath):
+        print("making directory " + processed_data_filepath + "...")
+        os.makedirs(processed_data_filepath)
 
     if not data_already_loaded:
         icgm_results_df = create_data_frame_for_figures(
+            is_baseline=False,
             results_path=results_files_path,
-            save_path=results_save_fig_path,
+            save_path=processed_data_filepath,
             results_folder_name=icgm_folder_name,
         )
 
         baseline_sensor_df = create_data_frame_for_figures(
             is_baseline=True,
             results_path=baseline_files_path,
-            save_path=results_save_fig_path,
+            save_path=processed_data_filepath,
             results_folder_name=ideal_sensor_folder_name,
         )
+
         run_pairwise_comparison(
             results_df=icgm_results_df,
             baseline_df=baseline_sensor_df,
-            save_fig_folder_name=save_fig_folder_name,
+            results_folder_name=icgm_folder_name,
+            baseline_folder_name=ideal_sensor_folder_name,
+            save_fig_path=results_save_fig_path,
+            aggregated_tables_filepath=processed_data_filepath,
         )
 
-    else:
-        # Just create the figures (loads in the already existing combined_df)
-        run_pairwise_comparison_figures(save_fig_folder_name=save_fig_folder_name)
+        get_metadata_tables(icgm_results_df, fig_path=metadata_save_path)
 
-    # Create metadata tables
-    metadata_save_path = os.path.join(results_save_fig_path, "metadata_tables")
+    else:  # Just create the figures (don't load the datatables)
 
-    if not os.path.exists(metadata_save_path):
-        print("making directory " + metadata_save_path + "...")
-        os.makedirs(metadata_save_path)
+        # Create the pairwise comparison dataframe
+        combined_data_filename = "pairwise_comparison-combined_df_icgm-sensitivity-analysis-results-2020-11-02-nogit_" \
+                                 "icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-00-11-01_v0-1-0.csv"
+        combined_data_filepath = os.path.join(
+            processed_data_filepath, combined_data_filename
+        )
 
-    icgm_results_df = pd.read_csv(
-        os.path.join(results_save_fig_path, icgm_folder_name + "_results_df.csv")
-    )
+        combined_df = pd.read_csv(combined_data_filepath)
+        #run_pairwise_comparison_figures(combined_df, results_save_fig_path)
 
-    get_metadata_tables(icgm_results_df, fig_path=metadata_save_path)
+        # Create metadata tables
+        icgm_data_filename = "results_df_icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-00-11-01_v0-1-0.csv"
+
+        icgm_results_df = pd.read_csv(
+            os.path.join(processed_data_filepath, icgm_data_filename)
+        )
+
+        get_metadata_tables(icgm_results_df, fig_path=metadata_save_path)

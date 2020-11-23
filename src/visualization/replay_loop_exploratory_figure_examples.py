@@ -13,7 +13,7 @@ from src.visualization.simulation_figure_plotly import create_simulation_figure_
 
 # Specify file location and filename
 file_location = os.path.join("..", "..", "data", "raw")
-filename = "replay-loop.csv"
+filename = "replay_loop.csv"
 
 # Create dataframe and respecify some of the columns so do not have duplicate or ambiguous column names
 replay_loop_df = pd.read_csv(os.path.abspath(os.path.join(file_location, filename)))

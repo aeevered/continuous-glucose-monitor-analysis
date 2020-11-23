@@ -12,8 +12,8 @@ setup(
     author=author,
     author_email=author_email,
     packages=[package_name],  # add subpackages too
-    package_dir={package_name: 'src'},
-    license='BSD 2-Clause',
-    long_description=open('README.md').read(),
-    python_requires='>=3.6',
+    package_dir={package_name: "src"},
+    license="BSD 2-Clause",
+    long_description=open("README.md").read(),
+    python_requires=">=3.6",
 )

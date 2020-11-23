@@ -16,7 +16,7 @@ from src.visualization.simulation_figures_shared_functions import (
 # output animation/figure for the purpose of testing,
 # illustrating how these functions work and/or demoing.
 
-############## Simulation Animation Plotly Examples #################
+# Simulation Animation Plotly Examples
 
 # Specify file location of where want to save examples to
 save_fig_path = os.path.join(
@@ -25,7 +25,6 @@ save_fig_path = os.path.join(
     "reports",
     "figures",
     "simulation_figure_examples",
-    "plotly_simulation_figures",
 )
 
 # Specify file location and filename of files to include in visualization
@@ -109,7 +108,7 @@ create_simulation_figure_plotly(
     animate=True,
 )
 
-############## Simulation Animation Matplotlib Examples #################
+# Simulation Animation Matplotlib Examples
 
 
 def simulation_description_title(
@@ -163,7 +162,7 @@ no_loop_filename = "risk_scenarios_do_nothing.csv"
 simulation_name = "Risk Scenario: Double Carb Entry"
 simulation_description = (
     "In this scenario, a user enters"
-    "a carb value into their pump twice (for example after thinking the first entry "
+    " a carb value into their pump twice (for example after thinking the first entry "
     "\ndid not go through). Loop is then recommending doses based on erroneous carb values."
 )
 fields = [
