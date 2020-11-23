@@ -1754,13 +1754,26 @@ sensor_characteristics_dict = {
 
 if __name__ == "__main__":
 
+    # To create the iCGM sensitivity analysis figures, follow these steps:
+    # 1. Get baseline and results data from Google Drive and add the data folders to .../data/raw
+    # 2. Optional: add "-nogit" to the end of those files (this will add "-nogit" to figure directories, as well)
+    # or add to the gitignore.
+    # 3. Set "data_already_loaded" to False and run this code.
+    # The aggregate tables will be written to .../data/processed and can be used for any subsequent figure creation.
+    #
+    # For all subsequent runs of this same data:
+    # 1. Set data_already_loaded to True
+    # 2. Update icgm_data_filename and combined_data_filename to be the names of the aggregated
+    # results dataframes that have already been created.
+
+
     # TODO: automatically grab the code version to add to the figures generated
     code_version = "v0-1-0"
     utc_string = dt.datetime.utcnow().strftime("%Y-%m-%d-%H-%m-%S")
 
     # Specify this parameter based on whether want to load the data and run the figures
     # or just run the figures
-    data_already_loaded = True
+    data_already_loaded = False
 
     # Specify the iCGM data filepath
     icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
@@ -1853,7 +1866,7 @@ if __name__ == "__main__":
         )
 
         combined_df = pd.read_csv(combined_data_filepath)
-        #run_pairwise_comparison_figures(combined_df, results_save_fig_path)
+        run_pairwise_comparison_figures(combined_df, results_save_fig_path)
 
         # Create metadata tables
         icgm_data_filename = "results_df_icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-00-11-01_v0-1-0.csv"
