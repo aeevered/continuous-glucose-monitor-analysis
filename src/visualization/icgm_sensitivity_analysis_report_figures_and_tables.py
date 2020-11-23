@@ -334,19 +334,14 @@ def get_metadata_tables(demographic_df, fig_path):
     """
 
     # Prepare demographic data for tables
-    print(demographic_df.columns)
     virtual_patient_group = demographic_df.groupby("virtual_patient_num")
-    print(virtual_patient_group)
+
     demographic_reduced_df = virtual_patient_group[
         ["age", "ylw", "cir", "isf", "sbr"]
     ].median()
 
-    print(demographic_reduced_df)
-
     # get replace age and years living with (ylw) < 0 with np.nan
     demographic_reduced_df[demographic_reduced_df < 0] = np.nan
-
-    print(demographic_reduced_df)
 
     # %% Age Breakdown Table
     # TODO: this can be generalized for any time we want to get counts by bins
@@ -421,7 +416,6 @@ def get_metadata_tables(demographic_df, fig_path):
         save_fig_path=fig_path,
     )
 
-    print(demographic_reduced_df)
     # %% Carb to Insulin Ratio Table
     cir_bin_breakpoints = np.array(
         [
@@ -1145,7 +1139,6 @@ def create_paired_comparison_by_analysis_level_scatter_plots(
                     reduced_df = df[
                         df[analysis_level + "_icgm"] == analysis_level_value
                     ]
-                    print(reduced_df[[sensor_characteristic + "_icgm", metric_field]])
 
                     fig.add_trace(
                         go.Scatter(
@@ -1773,7 +1766,7 @@ if __name__ == "__main__":
 
     # Specify this parameter based on whether want to load the data and run the figures
     # or just run the figures
-    data_already_loaded = False
+    data_already_loaded = True
 
     # Specify the iCGM data filepath
     icgm_folder_name = "icgm-sensitivity-analysis-results-2020-11-02-nogit"
@@ -1860,7 +1853,7 @@ if __name__ == "__main__":
 
         # Create the pairwise comparison dataframe
         combined_data_filename = "pairwise_comparison-combined_df_icgm-sensitivity-analysis-results-2020-11-02-nogit_" \
-                                 "icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-00-11-01_v0-1-0.csv"
+                                 "icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-03-11-30_v0-1-0.csv"
         combined_data_filepath = os.path.join(
             processed_data_filepath, combined_data_filename
         )
@@ -1869,7 +1862,7 @@ if __name__ == "__main__":
         run_pairwise_comparison_figures(combined_df, results_save_fig_path)
 
         # Create metadata tables
-        icgm_data_filename = "results_df_icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-00-11-01_v0-1-0.csv"
+        icgm_data_filename = "results_df_icgm-sensitivity-analysis-results-2020-11-05-nogit_2020-11-23-03-11-30_v0-1-0.csv"
 
         icgm_results_df = pd.read_csv(
             os.path.join(processed_data_filepath, icgm_data_filename)
