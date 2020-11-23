@@ -338,7 +338,7 @@ if __name__ == "__main__":
         "reports",
         "figures",
         "icgm-sensitivity-paired-comparison-figures",
-        save_fig_folder_name,
+        icgm_folder_name,
     )
 
     # Load in combined df
