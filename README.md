@@ -1,46 +1,33 @@
-# Tidepool Data Science Project Template
-## Creating a new repository from this template
-Manually create a new repo from this [template in github](https://github.com/tidepool-org/data-science-project-template/generate);
-github directions are [here](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+# Figures for Data Science Risk Analyses
 
-## New Repo Checklist & Instructions
-- [ ] Update repo settings in github (manual process)
-    * [ ] Update **Settings/Options/Repository name**
-        * Name follows the `<team (optional)> - <type(optional)> - <one-to-three-word-description> - <initials (optional)>` in `lowercase-dash-format`.
-    Examples:
-        * `icgm-sensitivity-analysis` is used by all of Tidepool so no team is needed and is considered production code so no type is needed.
-        * `data-scence-donor-data-pipeline` is only used by Data Science
-        * `data-science-template-repository` is a template (type) used by Data Science Team
-        * `data-science-explore-<short-description>` type of work is exploratory
-        * `data-science-explore-<short-description>-etn` exploratory solo work has initials at the end
-    * [ ] Update **Settings/Options/Manage access**
-        - [ ] Invite data-science-admins team and give admin access
-        - [ ] Invite Data Science team and give write access
-    * [ ] Update **Settings/Options/Manage access/Branch protection rules**
-        - [ ] Set _Branch name pattern_ to `master`
-        - [ ] Check _Require pull request reviews before merging_
-        - [ ] Set _Required approving reivews:_ to 1 for non-production code and 2 for production code
-        - [ ] Check _Dismiss stale pull request approvals when new commits are pushed_
-        - [ ] TODO: add in travis ci instructions via _Require status checks to pass before merging_
-- [ ] Fill in this readme. Everything in [  ]'s should be changed and/or filled in.
-- [ ] After completing this checklist, move the completed checklist to the bottom of the readme
-- [ ] Delete everything above the [Project Name]
-
-
-# [Project Name]
-
-#### -- Project Status: [Active, On-Hold, Completed]
-#### -- Project Disclaimer: This work is for [Exploration, Development, Production]
-
-## Project Objective
-The purpose of this project is to [___].
+#### -- Project Status: Active
+#### -- Project Disclaimer: This work is for Exploration
+ ## Project Objective
+The purpose of this project is to create figures, tables, and animation for exploratory 
+analysis of Tidepool Data Science Team risk analyses results. 
 
 ## Definition of Done
-This phase of the project will be done when [___].
+This phase of the project will be done when exploratory analysis for these projects is completed and final figures are 
+approved. This project can then become a more permanent (non-exploratory) repository for final report figures.
 
 ## Project Description
-(Add a short paragraph with some details, Why?, How?, Link to Jira and/or Confluence)
-In order to learn/do [___], we did [___].
+This project includes:
+- Figure code for the analysis of **missed insulin pulses** (`insulin_pulses_animation.py`, `insulin_pulses_figures.py`)
+
+- **Replay loop exploratory figure code** (`replay_loop_exploratory_figure_examples.py`). 
+This code is very work and progress and left just in case anyone goes back to thinking about ways to visualize that.
+
+- **Code for iCGM sensitivity analysis figures**, including the code used for exploratory analysis 
+(labeled [ARCHIVE]) and a more recent and up to date file that can be run for aggregated data 
+and figures for the iCGM sensitivity analysis (`icgm_sensitivity_analysis_report_figures_and_tables.py`).
+
+- Generalized visualization **code for creating matplotlib and plotly 
+animations/static visualizations of simulation output** that more or less match
+Tidepool style guidelines. Files for those visualizations include `simulation_figure_matplotlib.py`, `simulation_figure_plotly.py`, 
+`simulation_figures_shared_functions`, `simulation_figures_demo_examples`. 
+Example output of the demo code is shown below.
+
+![](simulation_example_gif.gif)
 
 ### Technologies (Update this list)
 * Python (99% of the time)
@@ -84,10 +71,15 @@ This may also make it easier to convert existing packages into pypi packages. We
 in conda using the conda-environment.yml file when packages are not available via pip (e.g., R and plotly-orca).
 
 ## Getting Started with this project
-1. Raw Data is being kept [here](Repo folder containing raw data) within this repo.
-(If using offline data mention that and how they may obtain the data from the froup)
-2. Data processing/transformation scripts are being kept [here](Repo folder containing data processing scripts/notebooks)
-3. (Finishing filling out this list)
+Raw Data is being kept [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
+
+The rest of the data, if not already in the repository, can be found on Google Drive at
+[sample_data_for_data-science--explore--risk-sim-figures](https://drive.google.com/drive/folders/1IFIbc0Z6mOtT-hw6K6obJcd9QaYW1uEG?usp=sharing).
+This includes:
+
+    - `replay_loop.csv` for `replay_loop_exploratory_figure_examples.py`
+    - `risk_scenarios_do_nothing.csv` and `risk_scenarios_PyLoopkit v0.1.csv for simulation_figures_demo_examples.py`
+    - The files in `insulin-pulses-sample-files-2020-07-02` for `insulin_pulses_animation.py` and `insulin_pulses_figures.py`
 
 ## Contributing Guide
 1. All are welcome to contribute to this project.
@@ -103,16 +95,11 @@ or `project_data_figure-2020-04-25-v-0-1-0.png`.
 NOTE: PHI data is never stored in github and the .gitignore file includes this requirement as well.
 
 ## Featured Notebooks/Analysis/Deliverables
-* [Colab Notebook/Figures/Website](link)
 
 ## Tidepool Data Science Team
 |Name (with github link)    |  [Tidepool Slack](https://tidepoolorg.slack.com/)   |
 |---------|-----------------|
-|[Ed Nykaza](https://github.com/[ed-nykaza])| @ed        |
-|[Jason Meno](https://github.com/[jameno]) |  @jason    |
-|[Cameron Summers](https://github.com/[scaubrey]) |  @Cameron Summers    |
-
-## Known TODO items
-- [ ] automate the process of finding all of the the TODO: comments in the code and put link here.
-
-## Initial Setup Checklist
+|[Ed Nykaza](https://github.com/ed-nykaza)| @ed        |
+|[Jason Meno](https://github.com/jameno) |  @jason    |
+|[Cameron Summers](https://github.com/scaubrey) |  @Cameron Summers    |
+|[Anne Evered](https://github.com/aeevered) |  @anne    |

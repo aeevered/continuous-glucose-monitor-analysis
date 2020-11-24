@@ -1,5 +1,8 @@
 # ---- Tidepool ----
 
+# Large Compressed Files
+*.gz*
+
 # Personal health info
 phi-*
 PHI-*
