@@ -1,7 +1,5 @@
 # Figures for Data Science Risk Analyses
 
-#### -- Project Status: Active
-#### -- Project Disclaimer: This work is for Exploration
  ## Project Objective
 The purpose of this project is to create figures, tables, and animation for exploratory 
 analysis of Tidepool Data Science Team risk analyses results. 
@@ -71,35 +69,4 @@ This may also make it easier to convert existing packages into pypi packages. We
 in conda using the conda-environment.yml file when packages are not available via pip (e.g., R and plotly-orca).
 
 ## Getting Started with this project
-Raw Data is being kept [here, for iCGM Sensitivity Analysis Scenario and Results Files](https://drive.google.com/drive/u/2/folders/1QDGB5s8YVw9Iy-P_a0xl8nIZZCRm8E5W).
-
-The rest of the data, if not already in the repository, can be found on Google Drive at
-[sample_data_for_data-science--explore--risk-sim-figures](https://drive.google.com/drive/folders/1IFIbc0Z6mOtT-hw6K6obJcd9QaYW1uEG?usp=sharing).
-This includes:
-
-    - `replay_loop.csv` for `replay_loop_exploratory_figure_examples.py`
-    - `risk_scenarios_do_nothing.csv` and `risk_scenarios_PyLoopkit v0.1.csv for simulation_figures_demo_examples.py`
-    - The files in `insulin-pulses-sample-files-2020-07-02` for `insulin_pulses_animation.py` and `insulin_pulses_figures.py`
-
-## Contributing Guide
-1. All are welcome to contribute to this project.
-1. Naming convention for notebooks is
-`[short_description]-[initials]-[date_created]-[version]`,
-e.g. `initial_data_exploration-jqp-2020-04-25-v-0-1-0.ipynb`.
-A short `_` delimited description, the creator's initials, date of creation, and a version number,
-1. Naming convention for data files, figures, and tables is
-`[PHI (if applicable)]-[short_description]-[date created or downloaded]-[code_version]`,
-e.g. `raw_project_data_from_mnist-2020-04-25-v-0-1-0.csv`,
-or `project_data_figure-2020-04-25-v-0-1-0.png`.
-
-NOTE: PHI data is never stored in github and the .gitignore file includes this requirement as well.
-
-## Featured Notebooks/Analysis/Deliverables
-
-## Tidepool Data Science Team
-|Name (with github link)    |  [Tidepool Slack](https://tidepoolorg.slack.com/)   |
-|---------|-----------------|
-|[Ed Nykaza](https://github.com/ed-nykaza)| @ed        |
-|[Jason Meno](https://github.com/jameno) |  @jason    |
-|[Cameron Summers](https://github.com/scaubrey) |  @Cameron Summers    |
-|[Anne Evered](https://github.com/aeevered) |  @anne    |
+Note: Tidepool data for this project is not kept in the repository so figures cannot be run directly.
