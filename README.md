@@ -27,19 +27,12 @@ Example output of the demo code is shown below.
 
 ![](simulation_example_gif.gif)
 
-### Technologies (Update this list)
-* Python (99% of the time)
-* [Anaconda](https://www.anaconda.com/) for our virtual environments
-* Pandas for working with data (99% of the time)
+### Technologies
+* Python
+* [Anaconda](https://www.anaconda.com/)
+* Pandas for working with data
 * Google Colab for sharing examples
-* Plotly for visualization
-* Pytest for testing
-* Travis for continuous integration testing
-* Black for code style
-* Flake8 for linting
-* [Sphinx](https://www.sphinx-doc.org/en/master/) for documentation
-* Numpy docstring format
-* pre-commit for githooks
+* Plotly
 
 ## Getting Started with the Conda Virtual Environment
 1. Install [Miniconda](https://conda.io/miniconda.html). CAUTION for python virtual env users: Anaconda will automatically update your .bash_profile
